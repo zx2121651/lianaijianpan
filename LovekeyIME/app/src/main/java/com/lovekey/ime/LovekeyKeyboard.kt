@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,12 +24,15 @@ fun LovekeyKeyboard(
     onKeyPress: (String) -> Unit,
     onCandidateSelected: (String) -> Unit
 ) {
-    // Colors based on the generated "Ethereal Input" design system
-    val boardColor = Color(0xFFF9F9F9)
-    val keyColor = Color(0xFFFFFFFF)
-    val functionKeyColor = Color(0xFFE1E2EC)
-    val textColor = Color(0xFF2D3335)
-    val secondaryTextColor = Color(0xFF5A6061)
+    // 优雅内敛的浪漫主题 (Subtle Elegant Romance)
+    val boardColor = Color(0xFFFDFBFB) // 非常浅的暖灰/灰粉底色 (Off-white with a hint of warmth)
+    val keyColor = Color(0xFFFFFFFF) // 纯白按键
+    val functionKeyColor = Color(0xFFF3EBEB) // 淡淡的灰藕粉色功能键
+    val accentColor = Color(0xFFE2B4B8) // 强调色（回车键）：莫兰迪玫瑰金
+    val textColor = Color(0xFF4A4443) // 文字：深棕灰色（比纯黑柔和）
+    val secondaryTextColor = Color(0xFF988F8E) // 拼音提示文字：浅灰褐
+
+    val keyCornerRadius = 10.dp // 优雅的微圆角，而非浮夸的气泡
 
     Column(
         modifier = Modifier
@@ -38,38 +40,37 @@ fun LovekeyKeyboard(
             .background(boardColor)
             .padding(bottom = 12.dp)
     ) {
-        // Candidate View Bar
+        // 候选词栏 (Candidate View Bar)
         if (currentPinyinText.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
                     .background(Color.White)
-                    .shadow(elevation = 1.dp, spotColor = Color.LightGray)
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = currentPinyinText,
-                    color = secondaryTextColor,
+                    color = accentColor,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(end = 12.dp)
                 )
 
-                // Vertical divider
+                // 极细的分割线
                 Box(
                     modifier = Modifier
-                        .height(24.dp)
+                        .height(20.dp)
                         .width(1.dp)
-                        .background(Color(0xFFEBEBEB))
+                        .background(Color(0xFFF0EBEA))
                 )
 
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     items(candidateList) { candidate ->
@@ -79,9 +80,9 @@ fun LovekeyKeyboard(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(6.dp))
                                 .clickable { onCandidateSelected(candidate) }
-                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                                .padding(horizontal = 6.dp, vertical = 6.dp)
                         )
                     }
                 }
@@ -90,9 +91,9 @@ fun LovekeyKeyboard(
             Spacer(modifier = Modifier.height(52.dp))
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Keyboard View
+        // 键盘区 (Keyboard View)
         val rows = listOf(
             listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
             listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
@@ -104,27 +105,36 @@ fun LovekeyKeyboard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                    .padding(horizontal = 6.dp, vertical = 6.dp), // 稍微增加行距让键盘有呼吸感
                 horizontalArrangement = Arrangement.Center
             ) {
                 row.forEach { key ->
-                    val isFunctionKey = key in listOf("SHIFT", "DEL", "123", "ENT")
+                    val isFunctionKey = key in listOf("SHIFT", "DEL", "123")
+                    val isActionKey = key == "ENT"
                     val isSpaceKey = key == "SPACE"
 
-                    // Determine key weight and styling
+                    // 权重
                     val weight = when {
                         isSpaceKey -> 5f
-                        isFunctionKey -> 1.5f
+                        isFunctionKey || isActionKey -> 1.5f
                         else -> 1f
                     }
 
-                    val bgColor = if (isFunctionKey) functionKeyColor else keyColor
+                    // 背景色
+                    val bgColor = when {
+                        isActionKey -> accentColor // 强调色给回车
+                        isFunctionKey -> functionKeyColor
+                        else -> keyColor
+                    }
+
+                    // 文字颜色
+                    val currentTextColor = if (isActionKey) Color.White else textColor
 
                     val displayText = when(key) {
                         "SHIFT" -> "⇧"
                         "DEL" -> "⌫"
-                        "ENT" -> "↵"
-                        "SPACE" -> "拼音"
+                        "ENT" -> "发送"
+                        "SPACE" -> "Lovekey"
                         "123" -> "?123"
                         else -> key
                     }
@@ -132,25 +142,24 @@ fun LovekeyKeyboard(
                     Surface(
                         modifier = Modifier
                             .weight(weight)
-                            .padding(horizontal = 3.dp)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .padding(horizontal = 4.dp)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(keyCornerRadius))
                             .clickable {
-                                // Skip non-implemented keys for now
                                 if (key != "SHIFT" && key != "123") {
                                     onKeyPress(key)
                                 }
                             },
                         color = bgColor,
-                        shadowElevation = 1.dp,
-                        shape = RoundedCornerShape(8.dp)
+                        shadowElevation = 0.5.dp, // 极其微弱的投影，避免厚重感
+                        shape = RoundedCornerShape(keyCornerRadius)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 text = displayText,
-                                color = textColor,
-                                fontSize = if (isFunctionKey || isSpaceKey) 16.sp else 22.sp,
-                                fontWeight = if (isFunctionKey) FontWeight.Medium else FontWeight.Normal
+                                color = currentTextColor,
+                                fontSize = if (isFunctionKey || isSpaceKey || isActionKey) 15.sp else 23.sp,
+                                fontWeight = if (isFunctionKey || isActionKey) FontWeight.Medium else FontWeight.Light
                             )
                         }
                     }
