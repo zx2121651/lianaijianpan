@@ -1,11 +1,8 @@
 package com.android.inputmethod.pinyin;
 
-import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Vector;
 
@@ -73,50 +70,16 @@ public class PinyinDecoderService extends Service {
 
     public void initPinyinEngine() {
         if (inited) return;
+        byte usr_dict[];
+        usr_dict = new byte[MAX_PATH_FILE_LENGTH];
 
-        byte usr_dict[] = new byte[MAX_PATH_FILE_LENGTH];
-        getUsrDictFileName(usr_dict);
-
-        try {
-            AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.dict_pinyin);
-            if (afd != null) {
-                inited = nativeImOpenDecoderFd(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength(), usr_dict);
-                afd.close();
-            }
-        } catch (Exception e) {
-            Log.e("PinyinDecoderService", "Failed to open dict_pinyin as FD, falling back to file copy", e);
+        AssetFileDescriptor afd = getResources().openRawResourceFd(R.raw.dict_pinyin);
+        if (getUsrDictFileName(usr_dict)) {
+            inited = nativeImOpenDecoderFd(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength(), usr_dict);
         }
-
-        if (!inited) {
-            File dictFile = new File(getFilesDir(), "dict_pinyin.dat");
-            if (!dictFile.exists()) {
-                try {
-                    InputStream is = getResources().openRawResource(R.raw.dict_pinyin);
-                    FileOutputStream os = new FileOutputStream(dictFile);
-                    byte[] buffer = new byte[4096];
-                    int read;
-                    while ((read = is.read(buffer)) != -1) {
-                        os.write(buffer, 0, read);
-                    }
-                    os.close();
-                    is.close();
-                } catch (IOException e) {
-                    Log.e("PinyinDecoderService", "Failed to copy dictionary file", e);
-                    return;
-                }
-            }
-
-            byte[] sys_dict = new byte[MAX_PATH_FILE_LENGTH];
-            String sysDictPath = dictFile.getAbsolutePath();
-            if (sysDictPath.length() >= MAX_PATH_FILE_LENGTH) {
-                Log.e("PinyinDecoderService", "System dict path too long");
-                return;
-            }
-            for (int i = 0; i < sysDictPath.length(); i++)
-                sys_dict[i] = (byte) sysDictPath.charAt(i);
-            sys_dict[sysDictPath.length()] = 0;
-
-            inited = nativeImOpenDecoder(sys_dict, usr_dict);
+        try {
+            afd.close();
+        } catch (IOException e) {
         }
     }
 

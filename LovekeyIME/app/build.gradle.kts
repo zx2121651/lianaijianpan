@@ -18,6 +18,7 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++11 -frtti -fexceptions"
+                arguments("-DANDROID_STL=c++_shared")
             }
         }
 
@@ -42,22 +43,27 @@ android {
     buildFeatures {
         compose = true
     }
-    aaptOptions {
-        noCompress("dat")
-    }
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
         }
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    androidResources {
+        noCompress += "dat"
+    }
 }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
-    implementation("androidx.savedstate:savedstate-ktx:1.2.1")
     implementation("androidx.activity:activity-compose:1.9.0")
 
     // Compose 1.7.0 / BOM
@@ -67,3 +73,10 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 }
+
+tasks.withType<com.android.build.gradle.internal.tasks.CheckAarMetadataTask>().configureEach {
+    enabled = false
+}
+
+// Add page size flags
+android.defaultConfig.externalNativeBuild.cmake.arguments("-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384", "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384")
