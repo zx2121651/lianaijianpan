@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "LovekeyIME"
 include(":app")
+include(":pinyin-engine")
+include(":keyboard-ui")

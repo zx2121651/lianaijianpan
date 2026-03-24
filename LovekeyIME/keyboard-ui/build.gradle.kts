@@ -1,19 +1,15 @@
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    namespace = "com.lovekey.ime"
+    namespace = "com.lovekey.ime.ui"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.lovekey.ime"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
     }
 
     buildTypes {
@@ -35,9 +31,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":pinyin-engine"))
-    implementation(project(":keyboard-ui"))
-
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.2")
     implementation("androidx.activity:activity-compose:1.9.0")
@@ -48,8 +41,4 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-}
-
-tasks.withType<com.android.build.gradle.internal.tasks.CheckAarMetadataTask>().configureEach {
-    enabled = false
 }

@@ -13,7 +13,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.lovekey.ime.R;
+import com.android.inputmethod.pinyin.R;
 
 public class PinyinDecoderService extends Service {
     public native static boolean nativeImOpenDecoder(byte fn_sys_dict[], byte fn_usr_dict[]);

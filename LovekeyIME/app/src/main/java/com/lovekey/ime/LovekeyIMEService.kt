@@ -19,6 +19,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import com.android.inputmethod.pinyin.PinyinDecoderService
+import com.lovekey.ime.ui.LovekeyKeyboard
 
 class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner {
 

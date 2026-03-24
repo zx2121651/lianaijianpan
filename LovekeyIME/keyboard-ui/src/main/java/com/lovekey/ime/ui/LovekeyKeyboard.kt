@@ -1,4 +1,4 @@
-package com.lovekey.ime
+package com.lovekey.ime.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

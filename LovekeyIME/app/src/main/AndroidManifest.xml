@@ -7,6 +7,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="Lovekey IME"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:hardwareAccelerated="true"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light">
 
@@ -33,7 +34,6 @@
                 android:resource="@xml/method" />
         </service>
 
-        <service android:name="com.android.inputmethod.pinyin.PinyinDecoderService" android:exported="false" />
     </application>
 
 </manifest>
