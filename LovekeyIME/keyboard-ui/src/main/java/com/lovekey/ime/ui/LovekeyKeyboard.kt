@@ -18,6 +18,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+
+enum class ShiftState {
+    LOWERCASE, UPPERCASE, CAPSLOCK
+}
+
 enum class KeyboardMode {
     QWERTY, T9, HANDWRITING, SYMBOL
 }
@@ -134,15 +139,19 @@ fun LovekeyKeyboard(
         Spacer(modifier = Modifier.height(10.dp))
 
         when (currentMode) {
-            KeyboardMode.QWERTY -> QwertyKeyboard(
-                currentMode = modeState,
-                textColor = textColor,
-                keyColor = keyColor,
-                functionKeyColor = functionKeyColor,
-                accentColor = accentColor,
-                keyCornerRadius = keyCornerRadius,
-                onKeyPress = onKeyPress
-            )
+            KeyboardMode.QWERTY -> {
+                val shiftState = remember { mutableStateOf(ShiftState.LOWERCASE) }
+                QwertyKeyboard(
+                    shiftState = shiftState,
+                    currentMode = modeState,
+                    textColor = textColor,
+                    keyColor = keyColor,
+                    functionKeyColor = functionKeyColor,
+                    accentColor = accentColor,
+                    keyCornerRadius = keyCornerRadius,
+                    onKeyPress = onKeyPress
+                )
+            }
             KeyboardMode.T9 -> T9Keyboard(
                 currentMode = modeState,
                 textColor = textColor,
@@ -175,6 +184,7 @@ fun LovekeyKeyboard(
 
 @Composable
 fun QwertyKeyboard(
+    shiftState: MutableState<ShiftState>,
     currentMode: MutableState<KeyboardMode>, textColor: Color, keyColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit
 ) {
     val rows = listOf(
@@ -204,47 +214,54 @@ fun QwertyKeyboard(
 
                 val bgColor = when {
                     isActionKey -> accentColor
-                    isFunctionKey -> functionKeyColor
+                    isFunctionKey -> if (key == "SHIFT" && shiftState.value != ShiftState.LOWERCASE) Color(0xFFD6D1D1) else functionKeyColor
                     else -> keyColor
                 }
 
                 val currentTextColor = if (isActionKey) Color.White else textColor
 
                 val displayText = when(key) {
-                    "SHIFT" -> "⇧"
+                    "SHIFT" -> if (shiftState.value == ShiftState.LOWERCASE) "⇧" else "⬆"
                     "DEL" -> "⌫"
                     "ENT" -> "发送"
                     "SPACE" -> "Lovekey"
                     "123" -> "?123"
-                    else -> key
+                    else -> if (shiftState.value != ShiftState.LOWERCASE && key.length == 1) key.uppercase() else key
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .weight(weight)
-                        .padding(horizontal = 4.dp)
-                        .height(46.dp)
-                        .clip(RoundedCornerShape(keyCornerRadius))
-                        .clickable {
-                            if (key == "123") {
-                                currentMode.value = KeyboardMode.SYMBOL
-                            } else if (key != "SHIFT") {
-                                onKeyPress(key)
+                val showPopup = !isFunctionKey && !isSpaceKey && !isActionKey
+
+                KeyboardKey(
+                    text = displayText,
+                    modifier = Modifier.weight(weight),
+                    bgColor = bgColor,
+                    textColor = currentTextColor,
+                    fontSize = if (isFunctionKey || isSpaceKey || isActionKey) 15.sp else 23.sp,
+                    fontWeight = if (isFunctionKey || isActionKey) FontWeight.Medium else FontWeight.Light,
+                    keyCornerRadius = keyCornerRadius,
+                    showPopup = showPopup,
+                    onClick = {
+                        if (key == "SHIFT") {
+                            shiftState.value = when (shiftState.value) {
+                                ShiftState.LOWERCASE -> ShiftState.UPPERCASE
+                                ShiftState.UPPERCASE -> ShiftState.LOWERCASE
+                                ShiftState.CAPSLOCK -> ShiftState.LOWERCASE
                             }
-                        },
-                    color = bgColor,
-                    shadowElevation = 0.5.dp,
-                    shape = RoundedCornerShape(keyCornerRadius)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = displayText,
-                            color = currentTextColor,
-                            fontSize = if (isFunctionKey || isSpaceKey || isActionKey) 15.sp else 23.sp,
-                            fontWeight = if (isFunctionKey || isActionKey) FontWeight.Medium else FontWeight.Light
-                        )
+                        } else if (key == "123") {
+                            currentMode.value = KeyboardMode.SYMBOL
+                        } else {
+                            val keyToSend = if (key.length == 1 && shiftState.value != ShiftState.LOWERCASE) {
+                                key.uppercase()
+                            } else {
+                                key
+                            }
+                            onKeyPress(keyToSend)
+                            if (shiftState.value == ShiftState.UPPERCASE) {
+                                shiftState.value = ShiftState.LOWERCASE
+                            }
+                        }
                     }
-                }
+                )
             }
         }
     }
@@ -514,9 +531,5 @@ fun SymbolKeyboard(
                             fontSize = if (isFunctionKey || isSpaceKey || isActionKey) 15.sp else 23.sp,
                             fontWeight = if (isFunctionKey || isActionKey) FontWeight.Medium else FontWeight.Light
                         )
-                    }
-                }
-            }
-        }
-    }
 }
+}}}}}
