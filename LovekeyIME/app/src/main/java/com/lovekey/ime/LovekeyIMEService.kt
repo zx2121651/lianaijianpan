@@ -8,6 +8,10 @@ import android.inputmethodservice.InputMethodService
 import android.os.IBinder
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.FrameLayout
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.runtime.*
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -21,10 +25,13 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.android.inputmethod.pinyin.PinyinDecoderService
 import com.lovekey.ime.ui.LovekeyKeyboard
 
-class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner {
+class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+private val store = ViewModelStore()
+    override val viewModelStore: ViewModelStore
+        get() = store
 
     override val lifecycle: Lifecycle
         get() = lifecycleRegistry
@@ -61,6 +68,15 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     override fun onDestroy() {
         super.onDestroy()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        store.clear()
+
+        // Remove window extensions to avoid leaks
+        window?.window?.decorView?.let { view ->
+            view.setViewTreeLifecycleOwner(null)
+            view.setViewTreeSavedStateRegistryOwner(null)
+            view.setViewTreeViewModelStoreOwner(null)
+        }
+
         if (isBound) {
             unbindService(connection)
             isBound = false
@@ -80,9 +96,13 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     }
 
     override fun onCreateInputView(): View {
+        val rootLayout = FrameLayout(this)
+
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@LovekeyIMEService)
             setViewTreeSavedStateRegistryOwner(this@LovekeyIMEService)
+            setViewTreeViewModelStoreOwner(this@LovekeyIMEService)
+
             setContent {
                 var rawInput by remember { mutableStateOf("") }
                 var displayPinyinText by remember { mutableStateOf("") }
@@ -93,6 +113,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 LovekeyKeyboard(
                     currentPinyinText = displayPinyinText,
                     candidateList = candidateList,
+                    t9PinyinCombinations = t9PinyinCombinations,
                     onKeyPress = { key ->
                         when (key) {
                             ",", ".", "?", "!" -> {
@@ -199,12 +220,36 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                         rawInput = ""
                         displayPinyinText = ""
                         candidateList = emptyList()
+                        t9PinyinCombinations = emptyList()
                         if (isBound) PinyinDecoderService.nativeImResetSearch()
+                    },
+                    onSyllableSelected = { selectedSyllable ->
+                        displayPinyinText = selectedSyllable
+                        if (isBound) {
+                            PinyinDecoderService.nativeImResetSearch()
+                            val pyBytes = selectedSyllable.toByteArray()
+                            val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
+                            val newCandidates = mutableListOf<String>()
+                            val maxCandidates = minOf(numPredicts, 10)
+                            for (i in 0 until maxCandidates) {
+                                val choice = PinyinDecoderService.nativeImGetChoice(i)
+                                if (choice != null) {
+                                    newCandidates.add(choice)
+                                }
+                            }
+                            candidateList = newCandidates
+                        }
                     }
                 )
             }
         }
-        return composeView
+        rootLayout.addView(composeView)
+
+        rootLayout.setViewTreeLifecycleOwner(this@LovekeyIMEService)
+        rootLayout.setViewTreeSavedStateRegistryOwner(this@LovekeyIMEService)
+        rootLayout.setViewTreeViewModelStoreOwner(this@LovekeyIMEService)
+
+        return rootLayout
     }
 
 
