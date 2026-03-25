@@ -191,7 +191,7 @@ fun QwertyKeyboard(
         listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
         listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
         listOf("SHIFT", "z", "x", "c", "v", "b", "n", "m", "DEL"),
-        listOf("123", ",", "SPACE", ".", "ENT")
+        listOf("符号", "123", "SPACE", "中/英", "ENT")
     )
 
     rows.forEach { row ->
@@ -269,100 +269,161 @@ fun QwertyKeyboard(
 
 @Composable
 fun T9Keyboard(
-    currentMode: MutableState<KeyboardMode>, textColor: Color, secondaryTextColor: Color, keyColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit
+    currentMode: MutableState<KeyboardMode>,
+    textColor: Color,
+    keyColor: Color,
+    functionKeyColor: Color,
+    accentColor: Color,
+    secondaryTextColor: Color,
+    keyCornerRadius: androidx.compose.ui.unit.Dp,
+    onKeyPress: (String) -> Unit
 ) {
-    val rows = listOf(
-        listOf(Pair("1", "符"), Pair("2", "ABC"), Pair("3", "DEF"), Pair("DEL", "⌫")),
-        listOf(Pair("4", "GHI"), Pair("5", "JKL"), Pair("6", "MNO"), Pair("ENT", "发送")),
-        listOf(Pair("7", "PQRS"), Pair("8", "TUV"), Pair("9", "WXYZ"), Pair("ENT", "")),
-        listOf(Pair("123", "?123"), Pair("0", "SPACE"), Pair(".", "符号"), Pair("ENT", ""))
-    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(260.dp)
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        // Left Column (5 keys)
+        Column(
+            modifier = Modifier.weight(1.1f).fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            val leftKeys = listOf(",", ".", "?", "!", "符号")
+            leftKeys.forEach { key ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 4.dp, vertical = 3.dp)
+                        .clip(RoundedCornerShape(keyCornerRadius))
+                        .clickable { if (key == "符号") currentMode.value = KeyboardMode.SYMBOL else onKeyPress(key) },
+                    color = functionKeyColor,
+                    shadowElevation = 0.5.dp,
+                    shape = RoundedCornerShape(keyCornerRadius)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = key, color = textColor, fontSize = if (key == "符号") 16.sp else 22.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        }
 
-    Column(modifier = Modifier.padding(horizontal = 6.dp)) {
-        for (i in 0 until 4) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                for (j in 0 until 3) {
-                    val cell = rows[i][j]
-                    val isFunctionKey = cell.first in listOf("DEL", "123", ".", "1")
-                    val isSpace = cell.first == "0"
+        // Middle Column (3x4 Grid)
+        Column(
+            modifier = Modifier.weight(3.3f).fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            val middleRows = listOf(
+                listOf(Pair("@#", ""), Pair("ABC", "2"), Pair("DEF", "3")),
+                listOf(Pair("GHI", "4"), Pair("JKL", "5"), Pair("MNO", "6")),
+                listOf(Pair("PQRS", "7"), Pair("TUV", "8"), Pair("WXYZ", "9")),
+                listOf(Pair("123", ""), Pair("0", ""), Pair("中/英", ""))
+            )
 
-                    val bgColor = if (isFunctionKey) functionKeyColor else keyColor
+            middleRows.forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    row.forEach { cell ->
+                        val isFunctionKey = cell.first in listOf("@#", "123", "中/英")
+                        val isSpace = cell.first == "0"
+                        val bgColor = if (isFunctionKey) functionKeyColor else keyColor
 
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 4.dp)
-                            .height(54.dp)
-                            .clip(RoundedCornerShape(keyCornerRadius))
-                            .clickable {
-                                if (cell.first == "123" || cell.first == ".") {
-                                    currentMode.value = KeyboardMode.SYMBOL
-                                } else if (isSpace) {
-                                    onKeyPress("SPACE")
-                                } else if (!isFunctionKey) {
-                                    onKeyPress(cell.first)
-                                }
-                            },
-                        color = bgColor,
-                        shadowElevation = 0.5.dp,
-                        shape = RoundedCornerShape(keyCornerRadius)
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .padding(horizontal = 4.dp, vertical = 3.dp)
+                                .clip(RoundedCornerShape(keyCornerRadius))
+                                .clickable {
+                                    if (cell.first == "123" || cell.first == "符号") {
+                                        currentMode.value = KeyboardMode.SYMBOL
+                                    } else if (isSpace) {
+                                        onKeyPress("SPACE")
+                                    } else if (cell.second.isNotEmpty()) {
+                                        onKeyPress(cell.second)
+                                    } else {
+                                        onKeyPress(cell.first)
+                                    }
+                                },
+                            color = bgColor,
+                            shadowElevation = 0.5.dp,
+                            shape = RoundedCornerShape(keyCornerRadius)
                         ) {
-                            if (isFunctionKey || isSpace) {
-                                Text(
-                                    text = if(isSpace) "Lovekey" else if(cell.first=="1") cell.second else cell.first,
-                                    color = textColor,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            } else {
-                                Text(text = cell.first, color = textColor, fontSize = 20.sp, fontWeight = FontWeight.Medium)
-                                Text(text = cell.second, color = secondaryTextColor, fontSize = 10.sp, fontWeight = FontWeight.Light)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                if (isFunctionKey) {
+                                    Text(text = cell.first, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                } else if (cell.first == "123" || cell.first == "符号") {
+                                        currentMode.value = KeyboardMode.SYMBOL
+                                    } else if (isSpace) {
+                                    Text(text = "SPACE", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                } else {
+                                    Text(text = cell.first, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                                    Text(text = cell.second, color = secondaryTextColor, fontSize = 12.sp, fontWeight = FontWeight.Light)
+                                }
                             }
                         }
                     }
                 }
+            }
+        }
 
-                if (i == 0) {
-                     Surface(
-                        modifier = Modifier
-                            .weight(0.8f)
-                            .padding(horizontal = 4.dp)
-                            .height(54.dp)
-                            .clip(RoundedCornerShape(keyCornerRadius))
-                            .clickable { onKeyPress("DEL") },
-                        color = functionKeyColor,
-                        shadowElevation = 0.5.dp,
-                        shape = RoundedCornerShape(keyCornerRadius)
-                    ) {
-                         Box(contentAlignment = Alignment.Center) {
-                             Text("⌫", color = textColor, fontSize = 18.sp)
-                         }
-                     }
-                } else if (i == 1) {
-                     Surface(
-                        modifier = Modifier
-                            .weight(0.8f)
-                            .padding(horizontal = 4.dp)
-                            .height((54 * 3 + 12 * 2).dp)
-                            .clip(RoundedCornerShape(keyCornerRadius))
-                            .clickable { onKeyPress("ENT") },
-                        color = accentColor,
-                        shadowElevation = 0.5.dp,
-                        shape = RoundedCornerShape(keyCornerRadius)
-                    ) {
-                         Box(contentAlignment = Alignment.Center) {
-                             Text("发送", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                         }
-                     }
+        // Right Column (3 keys, last one is taller)
+        Column(
+            modifier = Modifier.weight(1.1f).fillMaxHeight(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 4.dp, vertical = 3.dp)
+                    .clip(RoundedCornerShape(keyCornerRadius))
+                    .clickable { onKeyPress("DEL") },
+                color = functionKeyColor,
+                shadowElevation = 0.5.dp,
+                shape = RoundedCornerShape(keyCornerRadius)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("⌫", color = textColor, fontSize = 20.sp)
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 4.dp, vertical = 3.dp)
+                    .clip(RoundedCornerShape(keyCornerRadius))
+                    .clickable { onKeyPress("CLEAR") },
+                color = functionKeyColor,
+                shadowElevation = 0.5.dp,
+                shape = RoundedCornerShape(keyCornerRadius)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("重输", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(2f)
+                    .padding(horizontal = 4.dp, vertical = 3.dp)
+                    .clip(RoundedCornerShape(keyCornerRadius))
+                    .clickable { onKeyPress("ENT") },
+                color = accentColor,
+                shadowElevation = 0.5.dp,
+                shape = RoundedCornerShape(keyCornerRadius)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("发送", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }

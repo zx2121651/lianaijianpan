@@ -5,10 +5,13 @@ file_path = "LovekeyIME/keyboard-ui/src/main/java/com/lovekey/ime/ui/LovekeyKeyb
 with open(file_path, 'r') as f:
     content = f.read()
 
-# Replace T9Keyboard implementation
-t9_pattern = r'@Composable\nfun T9Keyboard\([\s\S]*?\}\n\}\n'
+# Let's fix the T9Keyboard parameter replacement which might have been broken by my regex if the function body wasn't correctly matched.
+# I'll manually replace the entire T9Keyboard function.
 
-new_t9 = """@Composable
+t9_start = content.find("@Composable\nfun T9Keyboard")
+t9_end = content.find("@Composable\nfun HandwritingKeyboard")
+
+new_t9_code = """@Composable
 fun T9Keyboard(
     textColor: Color,
     keyColor: Color,
@@ -69,6 +72,7 @@ fun T9Keyboard(
                 ) {
                     row.forEach { cell ->
                         val isFunctionKey = cell.first in listOf("@#", "123", "中/英")
+                        val isSpace = cell.first == "0"
                         val bgColor = if (isFunctionKey) functionKeyColor else keyColor
 
                         Surface(
@@ -78,8 +82,13 @@ fun T9Keyboard(
                                 .padding(horizontal = 4.dp, vertical = 3.dp)
                                 .clip(RoundedCornerShape(keyCornerRadius))
                                 .clickable {
-                                    if (cell.second.isNotEmpty()) onKeyPress(cell.second)
-                                    else onKeyPress(cell.first)
+                                    if (isSpace) {
+                                        onKeyPress("SPACE")
+                                    } else if (cell.second.isNotEmpty()) {
+                                        onKeyPress(cell.second)
+                                    } else {
+                                        onKeyPress(cell.first)
+                                    }
                                 },
                             color = bgColor,
                             shadowElevation = 0.5.dp,
@@ -91,7 +100,7 @@ fun T9Keyboard(
                             ) {
                                 if (isFunctionKey) {
                                     Text(text = cell.first, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                } else if (cell.first == "0") {
+                                } else if (isSpace) {
                                     Text(text = "SPACE", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                                 } else {
                                     Text(text = cell.first, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Medium)
@@ -148,7 +157,7 @@ fun T9Keyboard(
                     .padding(horizontal = 4.dp, vertical = 3.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
                     .clickable { onKeyPress("ENT") },
-                color = accentColor, // The screenshot has a gray button for Enter, but we can stick to our accent or use Gray. I'll use a slightly different color if needed.
+                color = accentColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)
             ) {
@@ -159,25 +168,13 @@ fun T9Keyboard(
         }
     }
 }
+
 """
 
-content = re.sub(t9_pattern, new_t9, content)
-
-# 2. Also update the keyboard color palette in LovekeyKeyboard to match Sogou's light gray background and white keys more closely
-color_pattern = r'val backgroundColor = Color\(0xFFFDFBFB\)\n\s+val keyColor = Color\(0xFFFFFFFF\)\n\s+val functionKeyColor = Color\(0xFFF3EFEF\)\n\s+val textColor = Color\(0xFF4A4443\)\n\s+val accentColor = Color\(0xFFE2B4B8\)'
-new_colors = r'''val backgroundColor = Color(0xFFEBEBEB)
-    val keyColor = Color(0xFFFFFFFF)
-    val functionKeyColor = Color(0xFFD4DBDE)
-    val textColor = Color(0xFF222222)
-    val accentColor = Color(0xFF4285F4) // A blue-ish accent for enter'''
-content = re.sub(color_pattern, new_colors, content)
-
-# Let's adjust QWERTY's bottom row to match Sogou: '符号', '123', 'Space', '中/英', 'ENT'
-qwerty_bottom_row_pattern = r'listOf\("123", ",", "SPACE", "\.", "ENT"\)'
-new_qwerty_bottom_row = r'listOf("符号", "123", "SPACE", "中/英", "ENT")'
-content = re.sub(qwerty_bottom_row_pattern, new_qwerty_bottom_row, content)
-
-with open(file_path, 'w') as f:
-    f.write(content)
-
-print("LovekeyKeyboard.kt patched with new T9 UI")
+if t9_start != -1 and t9_end != -1:
+    content = content[:t9_start] + new_t9_code + content[t9_end:]
+    with open(file_path, 'w') as f:
+        f.write(content)
+    print("T9Keyboard replaced manually")
+else:
+    print("Could not find T9Keyboard bounds")

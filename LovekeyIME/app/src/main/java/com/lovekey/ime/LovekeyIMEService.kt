@@ -88,12 +88,20 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 var displayPinyinText by remember { mutableStateOf("") }
                 var candidateList by remember { mutableStateOf<List<String>>(emptyList()) }
                 var isT9Mode by remember { mutableStateOf(false) }
+                var t9PinyinCombinations by remember { mutableStateOf<List<String>>(emptyList()) }
 
                 LovekeyKeyboard(
                     currentPinyinText = displayPinyinText,
                     candidateList = candidateList,
                     onKeyPress = { key ->
                         when (key) {
+                            "CLEAR" -> {
+                                rawInput = ""
+                                displayPinyinText = ""
+                                candidateList = emptyList()
+                                t9PinyinCombinations = emptyList<String>()
+                                if (isBound) PinyinDecoderService.nativeImResetSearch()
+                            }
                             "DEL" -> {
                                 if (rawInput.isNotEmpty()) {
                                     rawInput = rawInput.dropLast(1)
@@ -125,6 +133,10 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                                 } else {
                                     currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_DONE)
                                 }
+                            }
+                            "中/英" -> {
+                                // Toggle Chinese/English mode (Placeholder for future implementation)
+                                // Currently we just clear or ignore.
                             }
                             else -> {
                                 // Detect if it's a digit from T9
