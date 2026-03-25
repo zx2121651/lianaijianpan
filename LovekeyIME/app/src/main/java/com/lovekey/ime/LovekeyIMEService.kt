@@ -95,6 +95,44 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     candidateList = candidateList,
                     onKeyPress = { key ->
                         when (key) {
+                            ",", ".", "?", "!" -> {
+                                val chinesePunct = when (key) {
+                                    "," -> "，"
+                                    "." -> "。"
+                                    "?" -> "？"
+                                    "!" -> "！"
+                                    else -> key
+                                }
+
+                                // If there are active candidates, commit the first one before punctuation
+                                if (candidateList.isNotEmpty()) {
+                                    currentInputConnection?.commitText(candidateList.first(), 1)
+                                } else if (rawInput.isNotEmpty()) {
+                                    currentInputConnection?.commitText(rawInput, 1)
+                                }
+
+                                currentInputConnection?.commitText(chinesePunct, 1)
+                                rawInput = ""
+                                displayPinyinText = ""
+                                candidateList = emptyList()
+                                t9PinyinCombinations = emptyList<String>()
+                                if (isBound) PinyinDecoderService.nativeImResetSearch()
+                            }
+                            "1" -> {
+                                if (rawInput.isEmpty()) {
+                                    // If typing nothing, maybe output default punctuation or do nothing.
+                                    // Let's mimic Sogou: if no input, usually it's a punctuation short-cut.
+                                    // For simplicity, we can output a default full-width comma or do nothing.
+                                    currentInputConnection?.commitText("，", 1)
+                                } else {
+                                    // Acting as a separator
+                                    rawInput += "1"
+                                    val result = updateCandidates(rawInput, isT9Mode)
+                                    displayPinyinText = result.first
+                                    candidateList = result.second
+                                    t9PinyinCombinations = result.third
+                                }
+                            }
                             "CLEAR" -> {
                                 rawInput = ""
                                 displayPinyinText = ""
@@ -108,6 +146,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                                     val result = updateCandidates(rawInput, isT9Mode)
                                     displayPinyinText = result.first
                                     candidateList = result.second
+                                    t9PinyinCombinations = result.third
                                 } else {
                                     currentInputConnection?.deleteSurroundingText(1, 0)
                                 }
@@ -151,6 +190,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                                 val result = updateCandidates(rawInput, isT9Mode)
                                 displayPinyinText = result.first
                                 candidateList = result.second
+                                t9PinyinCombinations = result.third
                             }
                         }
                     },
@@ -195,11 +235,13 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
         return results
     }
 
-    private fun updateCandidates(input: String, isT9: Boolean = false): Pair<String, List<String>> {
+private fun updateCandidates(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> {
         if (input.isEmpty()) {
             if (isBound) PinyinDecoderService.nativeImResetSearch()
-            return Pair("", emptyList())
+            return Triple("", emptyList(), emptyList())
         }
+
+        var t9Combinations = emptyList<String>()
 
         if (isBound && pinyinService != null) {
             if (!isT9) {
@@ -215,13 +257,13 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                         newCandidates.add(choice)
                     }
                 }
-                return Pair(input, newCandidates)
+                return Triple(input, newCandidates, t9Combinations)
             } else {
-                // T9 Sequence Search
-                val permutations = getT9Permutations(input)
+                // T9 Sequence Search using T9Parser
+                t9Combinations = T9Parser.getValidPinyins(input)
                 val allCandidates = mutableListOf<Pair<String, List<String>>>()
 
-                for (pinyin in permutations) {
+                for (pinyin in t9Combinations) {
                     PinyinDecoderService.nativeImResetSearch()
                     val pyBytes = pinyin.toByteArray()
                     val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
@@ -251,10 +293,10 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     for (match in allCandidates) {
                         flatCandidates.addAll(match.second)
                     }
-                    return Pair(bestMatch.first, flatCandidates.distinct())
+                    return Triple(bestMatch.first, flatCandidates.distinct(), t9Combinations)
                 }
             }
         }
-        return Pair(input, emptyList())
+        return Triple(input, emptyList(), t9Combinations)
     }
 }
