@@ -31,8 +31,10 @@ enum class KeyboardMode {
 fun LovekeyKeyboard(
     currentPinyinText: String,
     candidateList: List<String>,
+    t9PinyinCombinations: List<String> = emptyList(),
     onKeyPress: (String) -> Unit,
-    onCandidateSelected: (String) -> Unit
+    onCandidateSelected: (String) -> Unit,
+    onSyllableSelected: (String) -> Unit = {}
 ) {
     val boardColor = Color(0xFFFDFBFB)
     val keyColor = Color(0xFFFFFFFF)
@@ -49,6 +51,14 @@ fun LovekeyKeyboard(
     val modeState = remember { mutableStateOf(currentMode) }
     LaunchedEffect(modeState.value) { currentMode = modeState.value }
 
+    var isSyllableBarExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentPinyinText) {
+        if (currentPinyinText.isEmpty() || t9PinyinCombinations.size <= 1) {
+            isSyllableBarExpanded = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -64,13 +74,30 @@ fun LovekeyKeyboard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (currentPinyinText.isNotEmpty()) {
-                Text(
-                    text = currentPinyinText,
-                    color = accentColor,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
+                Row(
+                    modifier = Modifier.clickable {
+                        if (t9PinyinCombinations.size > 1) {
+                            isSyllableBarExpanded = !isSyllableBarExpanded
+                        }
+                    },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = currentPinyinText,
+                        color = accentColor,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(end = if (t9PinyinCombinations.size > 1) 4.dp else 12.dp)
+                    )
+                    if (t9PinyinCombinations.size > 1) {
+                        Text(
+                            text = if (isSyllableBarExpanded) "▲" else "▼",
+                            color = accentColor,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -79,24 +106,51 @@ fun LovekeyKeyboard(
                         .background(Color(0xFFF0EBEA))
                 )
 
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    items(candidateList) { candidate ->
-                        Text(
-                            text = candidate,
-                            color = textColor,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable { onCandidateSelected(candidate) }
-                                .padding(horizontal = 6.dp, vertical = 6.dp)
-                        )
+                if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items(t9PinyinCombinations) { pinyin ->
+                            Text(
+                                text = pinyin,
+                                color = if (pinyin == currentPinyinText) accentColor else textColor,
+                                fontSize = 16.sp,
+                                fontWeight = if (pinyin == currentPinyinText) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color.Transparent)
+                                    .clickable {
+                                        isSyllableBarExpanded = false
+                                        onSyllableSelected(pinyin)
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                } else {
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        items(candidateList) { candidate ->
+                            Text(
+                                text = candidate,
+                                color = textColor,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Normal,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { onCandidateSelected(candidate) }
+                                    .padding(horizontal = 6.dp, vertical = 6.dp)
+                            )
+                        }
                     }
                 }
             } else {
@@ -181,6 +235,7 @@ fun LovekeyKeyboard(
         }
     }
 }
+
 
 @Composable
 fun QwertyKeyboard(
