@@ -37,6 +37,7 @@ fun LovekeyKeyboard(
     candidateList: List<String>,
     t9PinyinCombinations: List<String> = emptyList(),
     isEnglishModeExternal: Boolean = false,
+    enterKeyText: String = "发送",
     onKeyPress: (String) -> Unit,
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
@@ -215,6 +216,7 @@ fun LovekeyKeyboard(
                     shiftState = shiftState,
                     currentMode = modeState,
                     isEnglishModeExternal = isEnglishMode,
+                    enterKeyText = enterKeyText,
                     textColor = textColor,
                     keyColor = keyColor,
                     functionKeyColor = functionKeyColor,
@@ -233,6 +235,7 @@ fun LovekeyKeyboard(
             KeyboardMode.T9 -> T9Keyboard(
                 currentMode = modeState,
                 isEnglishModeExternal = isEnglishMode,
+                enterKeyText = enterKeyText,
                 textColor = textColor,
                 secondaryTextColor = secondaryTextColor,
                 keyColor = keyColor,
@@ -247,6 +250,7 @@ fun LovekeyKeyboard(
                 }
             )
             KeyboardMode.HANDWRITING -> HandwritingKeyboard(
+                enterKeyText = enterKeyText,
                 textColor = textColor,
                 functionKeyColor = functionKeyColor,
                 accentColor = accentColor,
@@ -256,6 +260,7 @@ fun LovekeyKeyboard(
             KeyboardMode.SYMBOL -> SymbolKeyboard(
                 currentMode = modeState,
                 previousMode = previousMode,
+                enterKeyText = enterKeyText,
                 textColor = textColor,
                 onModeChanged = {
                     isEnglishMode = it
@@ -277,6 +282,7 @@ fun QwertyKeyboard(
     shiftState: MutableState<ShiftState>,
     currentMode: MutableState<KeyboardMode>,
     isEnglishModeExternal: Boolean,
+    enterKeyText: String,
     textColor: Color, keyColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit, onModeChanged: (Boolean) -> Unit
 ) {
     val rows = listOf(
@@ -315,7 +321,7 @@ fun QwertyKeyboard(
                 val displayText = when(key) {
                     "SHIFT" -> if (shiftState.value == ShiftState.LOWERCASE) "⇧" else "⬆"
                     "DEL" -> "⌫"
-                    "ENT" -> "发送"
+                    "ENT" -> enterKeyText
                     "123" -> "?123"
                     "中/英" -> if (isEnglishModeExternal) "英/中" else "中/英"
                     "SPACE" -> if (isEnglishModeExternal) "Lovekey(英)" else "Lovekey"
@@ -366,6 +372,7 @@ fun QwertyKeyboard(
 fun T9Keyboard(
     currentMode: MutableState<KeyboardMode>,
     isEnglishModeExternal: Boolean,
+    enterKeyText: String,
     textColor: Color,
     keyColor: Color,
     functionKeyColor: Color,
@@ -460,11 +467,11 @@ fun T9Keyboard(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 if (isFunctionKey) {
-                                    Text(text = cell.first, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                    Text(text = cell.first, color = textColor, fontSize = if (enterKeyText.length > 2) 13.sp else 16.sp, fontWeight = FontWeight.Medium)
                                 } else if (cell.first == "123" || cell.first == "符号") {
                                         currentMode.value = KeyboardMode.SYMBOL
                                     } else if (isSpace) {
-                                    Text(text = "SPACE", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                    Text(text = "SPACE", color = textColor, fontSize = if (enterKeyText.length > 2) 13.sp else 16.sp, fontWeight = FontWeight.Medium)
                                 } else {
                                     Text(text = cell.first, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                                     Text(text = cell.second, color = secondaryTextColor, fontSize = 12.sp, fontWeight = FontWeight.Light)
@@ -509,7 +516,7 @@ fun T9Keyboard(
                 shape = RoundedCornerShape(keyCornerRadius)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("重输", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text("重输", color = textColor, fontSize = if (enterKeyText.length > 2) 13.sp else 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -525,7 +532,7 @@ fun T9Keyboard(
                 shape = RoundedCornerShape(keyCornerRadius)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("发送", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(enterKeyText, color = Color.White, fontSize = if (enterKeyText.length > 2) 13.sp else 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -534,6 +541,7 @@ fun T9Keyboard(
 
 @Composable
 fun HandwritingKeyboard(
+    enterKeyText: String,
     textColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit
 ) {
     Row(
@@ -613,7 +621,7 @@ fun HandwritingKeyboard(
                 shape = RoundedCornerShape(keyCornerRadius)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("发送", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(enterKeyText, color = Color.White, fontSize = if (enterKeyText.length > 2) 13.sp else 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -624,6 +632,7 @@ fun HandwritingKeyboard(
 fun SymbolKeyboard(
     currentMode: MutableState<KeyboardMode>,
     previousMode: KeyboardMode,
+    enterKeyText: String,
     textColor: Color,
     onModeChanged: (Boolean) -> Unit,
     keyColor: Color,
@@ -788,7 +797,7 @@ fun SymbolKeyboard(
                     shape = RoundedCornerShape(keyCornerRadius)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("发送", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text(enterKeyText, color = Color.White, fontSize = if (enterKeyText.length > 2) 13.sp else 15.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }

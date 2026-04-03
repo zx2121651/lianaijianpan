@@ -41,6 +41,7 @@ private val store = ViewModelStore()
 
     private var pinyinService: PinyinDecoderService? = null
     private var isBound = false
+    private val editorInfoState = mutableStateOf<EditorInfo?>(null)
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -85,6 +86,7 @@ private val store = ViewModelStore()
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        editorInfoState.value = info
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
@@ -104,6 +106,27 @@ private val store = ViewModelStore()
             setViewTreeViewModelStoreOwner(this@LovekeyIMEService)
 
             setContent {
+                val editorInfo = editorInfoState.value
+                val enterKeyText = remember(editorInfo) {
+                    val imeOptions = editorInfo?.imeOptions ?: 0
+                    val actionMasked = imeOptions and EditorInfo.IME_MASK_ACTION
+                    when (actionMasked) {
+                        EditorInfo.IME_ACTION_GO -> "前往"
+                        EditorInfo.IME_ACTION_NEXT -> "下一项"
+                        EditorInfo.IME_ACTION_SEARCH -> "搜索"
+                        EditorInfo.IME_ACTION_SEND -> "发送"
+                        EditorInfo.IME_ACTION_DONE -> "完成"
+                        EditorInfo.IME_ACTION_PREVIOUS -> "上一项"
+                        else -> {
+                            // If multi-line is supported or unspecified, default to enter symbol or "换行"
+                            if ((editorInfo?.inputType ?: 0) and android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE != 0) {
+                                "换行"
+                            } else {
+                                "回车" // Or "发送" as a generic default
+                            }
+                        }
+                    }
+                }
                 var rawInput by remember { mutableStateOf("") }
                 var displayPinyinText by remember { mutableStateOf("") }
                 var candidateList by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -207,9 +230,15 @@ private val store = ViewModelStore()
                                     rawInput = ""
                                     displayPinyinText = ""
                                     candidateList = emptyList()
+                                    t9PinyinCombinations = emptyList()
                                     if (isBound) PinyinDecoderService.nativeImResetSearch()
                                 } else {
-                                    currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_DONE)
+                                    val action = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_DONE
+                                    if (action == EditorInfo.IME_ACTION_NONE || action == EditorInfo.IME_ACTION_UNSPECIFIED) {
+                                        currentInputConnection?.commitText("\n", 1)
+                                    } else {
+                                        currentInputConnection?.performEditorAction(action)
+                                    }
                                 }
                             }
                             "中/英" -> {
