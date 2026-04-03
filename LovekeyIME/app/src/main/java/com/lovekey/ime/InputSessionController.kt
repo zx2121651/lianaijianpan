@@ -143,7 +143,7 @@ class InputSessionController(
             _displayPinyinText.value = ""
             _candidateList.value = emptyList()
             _t9PinyinCombinations.value = emptyList()
-            engineAdapter.resetSearch()
+            scope.launch { engineAdapter.resetSearch() }
             return
         }
 
@@ -165,6 +165,6 @@ class InputSessionController(
         _displayPinyinText.value = ""
         _candidateList.value = emptyList()
         _t9PinyinCombinations.value = emptyList()
-        engineAdapter.resetSearch()
+        scope.launch { engineAdapter.resetSearch() }
     }
 }

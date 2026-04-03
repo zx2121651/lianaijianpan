@@ -1,16 +1,26 @@
 package com.lovekey.ime
 
 import com.android.inputmethod.pinyin.PinyinDecoderService
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import java.util.concurrent.Executors
 
 class CandidateEngineAdapter {
     var isBound = false
 
-    suspend fun searchPinyin(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> = withContext(Dispatchers.Default) {
+    // Use a single-threaded dispatcher for all JNI calls to prevent concurrent
+    // modification of the underlying C++ Pinyin engine state, which can cause segfaults.
+    private val jniDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+    // Cache for dead-end T9 paths. If a pinyin prefix yielded 0 results,
+    // any longer string starting with this prefix is also a dead-end.
+    private val deadEndPrefixes = mutableSetOf<String>()
+
+    suspend fun searchPinyin(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> = withContext(jniDispatcher) {
         if (input.isEmpty()) {
-            resetSearch()
+            deadEndPrefixes.clear()
+            resetSearchInternal()
             return@withContext Triple("", emptyList(), emptyList())
         }
 
@@ -39,7 +49,13 @@ class CandidateEngineAdapter {
 
                 for (pinyin in t9Combinations) {
                     ensureActive() // Check for cancellation
-                    resetSearch()
+
+                    // Pruning optimization: Skip branches known to be dead-ends
+                    if (deadEndPrefixes.any { pinyin.startsWith(it) }) {
+                        continue
+                    }
+
+                    resetSearchInternal()
                     val pyBytes = pinyin.toByteArray()
                     val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
 
@@ -56,6 +72,9 @@ class CandidateEngineAdapter {
                         if (candidates.isNotEmpty()) {
                             allCandidates.add(Pair(pinyin, candidates))
                         }
+                    } else {
+                        // Mark as dead-end so future longer queries bypass this JNI bottleneck
+                        deadEndPrefixes.add(pinyin)
                     }
                 }
 
@@ -77,9 +96,9 @@ class CandidateEngineAdapter {
         return@withContext Triple(input, emptyList(), t9Combinations)
     }
 
-    suspend fun searchBySyllable(syllable: String): List<String> = withContext(Dispatchers.Default) {
+    suspend fun searchBySyllable(syllable: String): List<String> = withContext(jniDispatcher) {
         if (!isBound) return@withContext emptyList()
-        resetSearch()
+        resetSearchInternal()
         val pyBytes = syllable.toByteArray()
         val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
         val newCandidates = mutableListOf<String>()
@@ -94,7 +113,12 @@ class CandidateEngineAdapter {
         return@withContext newCandidates
     }
 
-    fun resetSearch() {
+    suspend fun resetSearch() = withContext(jniDispatcher) {
+        deadEndPrefixes.clear()
+        resetSearchInternal()
+    }
+
+    private fun resetSearchInternal() {
         if (isBound) {
             PinyinDecoderService.nativeImResetSearch()
         }
