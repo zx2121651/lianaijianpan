@@ -79,6 +79,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
         super.onDestroy()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         store.clear()
+        sessionController.destroy()
 
         window?.window?.decorView?.let { view ->
             view.setViewTreeLifecycleOwner(null)
