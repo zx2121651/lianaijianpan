@@ -109,49 +109,67 @@ private val store = ViewModelStore()
                 var candidateList by remember { mutableStateOf<List<String>>(emptyList()) }
                 var isT9Mode by remember { mutableStateOf(false) }
                 var t9PinyinCombinations by remember { mutableStateOf<List<String>>(emptyList()) }
+                var isEnglishMode by remember { mutableStateOf(false) }
 
                 LovekeyKeyboard(
                     currentPinyinText = displayPinyinText,
                     candidateList = candidateList,
                     t9PinyinCombinations = t9PinyinCombinations,
+                    isEnglishModeExternal = isEnglishMode,
+                    onModeChanged = {
+                        isEnglishMode = it
+                        rawInput = ""
+                        displayPinyinText = ""
+                        candidateList = emptyList()
+                        t9PinyinCombinations = emptyList()
+                        if (isBound) PinyinDecoderService.nativeImResetSearch()
+                    },
                     onKeyPress = { key ->
                         when (key) {
                             ",", ".", "?", "!" -> {
-                                val chinesePunct = when (key) {
-                                    "," -> "，"
-                                    "." -> "。"
-                                    "?" -> "？"
-                                    "!" -> "！"
-                                    else -> key
-                                }
+                                if (isEnglishMode) {
+                                    currentInputConnection?.commitText(key, 1)
+                                } else {
+                                    val chinesePunct = when (key) {
+                                        "," -> "，"
+                                        "." -> "。"
+                                        "?" -> "？"
+                                        "!" -> "！"
+                                        else -> key
+                                    }
 
-                                // If there are active candidates, commit the first one before punctuation
-                                if (candidateList.isNotEmpty()) {
-                                    currentInputConnection?.commitText(candidateList.first(), 1)
-                                } else if (rawInput.isNotEmpty()) {
-                                    currentInputConnection?.commitText(rawInput, 1)
-                                }
+                                    // If there are active candidates, commit the first one before punctuation
+                                    if (candidateList.isNotEmpty()) {
+                                        currentInputConnection?.commitText(candidateList.first(), 1)
+                                    } else if (rawInput.isNotEmpty()) {
+                                        currentInputConnection?.commitText(rawInput, 1)
+                                    }
 
-                                currentInputConnection?.commitText(chinesePunct, 1)
-                                rawInput = ""
-                                displayPinyinText = ""
-                                candidateList = emptyList()
-                                t9PinyinCombinations = emptyList<String>()
-                                if (isBound) PinyinDecoderService.nativeImResetSearch()
+                                    currentInputConnection?.commitText(chinesePunct, 1)
+                                    rawInput = ""
+                                    displayPinyinText = ""
+                                    candidateList = emptyList()
+                                    t9PinyinCombinations = emptyList<String>()
+                                    if (isBound) PinyinDecoderService.nativeImResetSearch()
+                                }
                             }
                             "1" -> {
-                                if (rawInput.isEmpty()) {
-                                    // If typing nothing, maybe output default punctuation or do nothing.
-                                    // Let's mimic Sogou: if no input, usually it's a punctuation short-cut.
-                                    // For simplicity, we can output a default full-width comma or do nothing.
-                                    currentInputConnection?.commitText("，", 1)
+                                if (isEnglishMode) {
+                                    currentInputConnection?.commitText("1", 1)
                                 } else {
-                                    // Acting as a separator
-                                    rawInput += "1"
-                                    val result = updateCandidates(rawInput, isT9Mode)
-                                    displayPinyinText = result.first
-                                    candidateList = result.second
-                                    t9PinyinCombinations = result.third
+                                    if (rawInput.isEmpty()) {
+                                        // If typing nothing, maybe output default punctuation or do nothing.
+                                        // Let's mimic Sogou: if no input, usually it's a punctuation short-cut.
+                                        // For simplicity, we can output a default full-width comma or do nothing.
+                                        currentInputConnection?.commitText("，", 1)
+                                    } else {
+                                        // Acting as a separator
+                                        rawInput += "1"
+                                        val result = updateCandidates(rawInput, isT9Mode)
+                                        displayPinyinText = result.first
+                                        candidateList = result.second
+                                        t9PinyinCombinations = result.third
+                                    }
                                 }
                             }
                             "CLEAR" -> {
@@ -199,19 +217,35 @@ private val store = ViewModelStore()
                                 // Currently we just clear or ignore.
                             }
                             else -> {
-                                // Detect if it's a digit from T9
-                                val isDigit = key.length == 1 && key[0].isDigit() && key != "0" && key != "1"
-                                // If we transition from QWERTY to T9 or vice versa, we might want to clear, but for now just append.
-                                // We update isT9Mode based on whether the input so far contains numbers.
-                                if (rawInput.isEmpty()) {
-                                    isT9Mode = isDigit
-                                }
+                                val isLetterOrT9Digit = key.length == 1 && (key[0].isLetter() || (key[0].isDigit() && key[0] != '0' && key[0] != '1'))
+                                if (isEnglishMode || !isLetterOrT9Digit) {
+                                    // Commit pending candidates before outputting the symbol
+                                    if (!isLetterOrT9Digit && !isEnglishMode) {
+                                        if (candidateList.isNotEmpty()) {
+                                            currentInputConnection?.commitText(candidateList.first(), 1)
+                                        } else if (rawInput.isNotEmpty()) {
+                                            currentInputConnection?.commitText(rawInput, 1)
+                                        }
+                                        rawInput = ""
+                                        displayPinyinText = ""
+                                        candidateList = emptyList()
+                                        t9PinyinCombinations = emptyList()
+                                        if (isBound) PinyinDecoderService.nativeImResetSearch()
+                                    }
+                                    currentInputConnection?.commitText(key, 1)
+                                } else {
+                                    // Detect if it's a digit from T9
+                                    val isDigit = key.length == 1 && key[0].isDigit() && key != "0" && key != "1"
+                                    if (rawInput.isEmpty()) {
+                                        isT9Mode = isDigit
+                                    }
 
-                                rawInput += key.lowercase()
-                                val result = updateCandidates(rawInput, isT9Mode)
-                                displayPinyinText = result.first
-                                candidateList = result.second
-                                t9PinyinCombinations = result.third
+                                    rawInput += key.lowercase()
+                                    val result = updateCandidates(rawInput, isT9Mode)
+                                    displayPinyinText = result.first
+                                    candidateList = result.second
+                                    t9PinyinCombinations = result.third
+                                }
                             }
                         }
                     },
