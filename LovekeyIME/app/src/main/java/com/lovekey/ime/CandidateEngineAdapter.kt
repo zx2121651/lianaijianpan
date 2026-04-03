@@ -1,14 +1,17 @@
 package com.lovekey.ime
 
 import com.android.inputmethod.pinyin.PinyinDecoderService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.ensureActive
 
 class CandidateEngineAdapter {
     var isBound = false
 
-    fun searchPinyin(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> {
+    suspend fun searchPinyin(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> = withContext(Dispatchers.Default) {
         if (input.isEmpty()) {
             resetSearch()
-            return Triple("", emptyList(), emptyList())
+            return@withContext Triple("", emptyList(), emptyList())
         }
 
         var t9Combinations = emptyList<String>()
@@ -22,18 +25,20 @@ class CandidateEngineAdapter {
                 val newCandidates = mutableListOf<String>()
                 val maxCandidates = minOf(numPredicts, 10)
                 for (i in 0 until maxCandidates) {
+                    ensureActive() // Check for cancellation
                     val choice = PinyinDecoderService.nativeImGetChoice(i)
                     if (choice != null) {
                         newCandidates.add(choice)
                     }
                 }
-                return Triple(input, newCandidates, t9Combinations)
+                return@withContext Triple(input, newCandidates, t9Combinations)
             } else {
                 // T9 Sequence Search using T9Parser
                 t9Combinations = T9Parser.getValidPinyins(input)
                 val allCandidates = mutableListOf<Pair<String, List<String>>>()
 
                 for (pinyin in t9Combinations) {
+                    ensureActive() // Check for cancellation
                     resetSearch()
                     val pyBytes = pinyin.toByteArray()
                     val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
@@ -42,6 +47,7 @@ class CandidateEngineAdapter {
                         val candidates = mutableListOf<String>()
                         val maxCandidates = minOf(numPredicts, 5) // Take top 5 from each valid permutation
                         for (i in 0 until maxCandidates) {
+                            ensureActive() // Check for cancellation inside inner loop too
                             val choice = PinyinDecoderService.nativeImGetChoice(i)
                             if (choice != null) {
                                 candidates.add(choice)
@@ -61,29 +67,31 @@ class CandidateEngineAdapter {
                     // Combine all valid candidate lists into one single list
                     val flatCandidates = mutableListOf<String>()
                     for (match in allCandidates) {
+                        ensureActive()
                         flatCandidates.addAll(match.second)
                     }
-                    return Triple(bestMatch.first, flatCandidates.distinct(), t9Combinations)
+                    return@withContext Triple(bestMatch.first, flatCandidates.distinct(), t9Combinations)
                 }
             }
         }
-        return Triple(input, emptyList(), t9Combinations)
+        return@withContext Triple(input, emptyList(), t9Combinations)
     }
 
-    fun searchBySyllable(syllable: String): List<String> {
-        if (!isBound) return emptyList()
+    suspend fun searchBySyllable(syllable: String): List<String> = withContext(Dispatchers.Default) {
+        if (!isBound) return@withContext emptyList()
         resetSearch()
         val pyBytes = syllable.toByteArray()
         val numPredicts = PinyinDecoderService.nativeImSearch(pyBytes, pyBytes.size)
         val newCandidates = mutableListOf<String>()
         val maxCandidates = minOf(numPredicts, 10)
         for (i in 0 until maxCandidates) {
+            ensureActive()
             val choice = PinyinDecoderService.nativeImGetChoice(i)
             if (choice != null) {
                 newCandidates.add(choice)
             }
         }
-        return newCandidates
+        return@withContext newCandidates
     }
 
     fun resetSearch() {

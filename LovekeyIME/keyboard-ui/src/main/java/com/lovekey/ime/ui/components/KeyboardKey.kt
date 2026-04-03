@@ -1,4 +1,4 @@
-package com.lovekey.ime.ui
+package com.lovekey.ime.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures

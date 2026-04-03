@@ -1,5 +1,6 @@
 package com.lovekey.ime
 
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -8,6 +9,10 @@ class InputSessionController(
     private val engineAdapter: CandidateEngineAdapter,
     private val commitPolicy: CommitPolicy
 ) {
+    // A scope bound to the lifetime of the IMEService, or cancelled externally
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var searchJob: Job? = null
+
     private val _rawInput = MutableStateFlow("")
     val rawInput: StateFlow<String> = _rawInput.asStateFlow()
 
@@ -107,7 +112,12 @@ class InputSessionController(
 
     fun handleSyllableSelected(syllable: String) {
         _displayPinyinText.value = syllable
-        _candidateList.value = engineAdapter.searchBySyllable(syllable)
+        // Cancel any pending search jobs
+        searchJob?.cancel()
+        searchJob = scope.launch {
+            val candidates = engineAdapter.searchBySyllable(syllable)
+            _candidateList.value = candidates
+        }
     }
 
     fun setEnglishMode(isEnglish: Boolean) {
@@ -119,15 +129,34 @@ class InputSessionController(
         engineAdapter.isBound = bound
     }
 
+    fun destroy() {
+        scope.cancel()
+    }
+
     private fun updateRawInput(newInput: String) {
         _rawInput.value = newInput
-        val result = engineAdapter.searchPinyin(newInput, isT9Mode)
-        _displayPinyinText.value = result.first
-        _candidateList.value = result.second
-        _t9PinyinCombinations.value = result.third
+
+        // Cancel previous job if it's still running (throttle/debounce effect natively)
+        searchJob?.cancel()
+
+        if (newInput.isEmpty()) {
+            _displayPinyinText.value = ""
+            _candidateList.value = emptyList()
+            _t9PinyinCombinations.value = emptyList()
+            engineAdapter.resetSearch()
+            return
+        }
+
+        searchJob = scope.launch {
+            val result = engineAdapter.searchPinyin(newInput, isT9Mode)
+            _displayPinyinText.value = result.first
+            _candidateList.value = result.second
+            _t9PinyinCombinations.value = result.third
+        }
     }
 
     private fun clearSession() {
+        searchJob?.cancel()
         _rawInput.value = ""
         _displayPinyinText.value = ""
         _candidateList.value = emptyList()
