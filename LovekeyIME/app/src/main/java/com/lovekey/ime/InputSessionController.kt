@@ -1,0 +1,137 @@
+package com.lovekey.ime
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class InputSessionController(
+    private val engineAdapter: CandidateEngineAdapter,
+    private val commitPolicy: CommitPolicy
+) {
+    private val _rawInput = MutableStateFlow("")
+    val rawInput: StateFlow<String> = _rawInput.asStateFlow()
+
+    private val _displayPinyinText = MutableStateFlow("")
+    val displayPinyinText: StateFlow<String> = _displayPinyinText.asStateFlow()
+
+    private val _candidateList = MutableStateFlow<List<String>>(emptyList())
+    val candidateList: StateFlow<List<String>> = _candidateList.asStateFlow()
+
+    private val _t9PinyinCombinations = MutableStateFlow<List<String>>(emptyList())
+    val t9PinyinCombinations: StateFlow<List<String>> = _t9PinyinCombinations.asStateFlow()
+
+    private val _isEnglishMode = MutableStateFlow(false)
+    val isEnglishMode: StateFlow<Boolean> = _isEnglishMode.asStateFlow()
+
+    private var isT9Mode = false
+
+    fun handleKeyPress(key: String) {
+        when (key) {
+            ",", ".", "?", "!" -> {
+                commitPolicy.commitPunctuation(
+                    key = key,
+                    isEnglishMode = _isEnglishMode.value,
+                    hasCandidates = _candidateList.value.isNotEmpty(),
+                    firstCandidate = _candidateList.value.firstOrNull(),
+                    rawInput = _rawInput.value
+                )
+                clearSession()
+            }
+            "1" -> {
+                if (_isEnglishMode.value) {
+                    commitPolicy.commitText("1")
+                } else {
+                    if (_rawInput.value.isEmpty()) {
+                        commitPolicy.commitText("，")
+                    } else {
+                        updateRawInput(_rawInput.value + "1")
+                    }
+                }
+            }
+            "CLEAR" -> {
+                clearSession()
+            }
+            "DEL" -> {
+                if (_rawInput.value.isNotEmpty()) {
+                    updateRawInput(_rawInput.value.dropLast(1))
+                } else {
+                    commitPolicy.deleteSurroundingText(1, 0)
+                }
+            }
+            "SPACE" -> {
+                if (_candidateList.value.isNotEmpty()) {
+                    commitPolicy.commitText(_candidateList.value.first())
+                    clearSession()
+                } else {
+                    commitPolicy.commitText(" ")
+                }
+            }
+            "ENT" -> {
+                if (_displayPinyinText.value.isNotEmpty()) {
+                    commitPolicy.commitText(_displayPinyinText.value)
+                    clearSession()
+                } else {
+                    commitPolicy.commitNewlineOrAction()
+                }
+            }
+            "中/英" -> {
+                // Handled partially in Compose UI, but if reached here, we can toggle or ignore
+            }
+            else -> {
+                val isLetterOrT9Digit = key.length == 1 && (key[0].isLetter() || (key[0].isDigit() && key[0] != '0' && key[0] != '1'))
+                if (_isEnglishMode.value || !isLetterOrT9Digit) {
+                    if (!isLetterOrT9Digit && !_isEnglishMode.value) {
+                        if (_candidateList.value.isNotEmpty()) {
+                            commitPolicy.commitText(_candidateList.value.first())
+                        } else if (_rawInput.value.isNotEmpty()) {
+                            commitPolicy.commitText(_rawInput.value)
+                        }
+                        clearSession()
+                    }
+                    commitPolicy.commitText(key)
+                } else {
+                    val isDigit = key.length == 1 && key[0].isDigit() && key != "0" && key != "1"
+                    if (_rawInput.value.isEmpty()) {
+                        isT9Mode = isDigit
+                    }
+                    updateRawInput(_rawInput.value + key.lowercase())
+                }
+            }
+        }
+    }
+
+    fun handleCandidateSelected(candidate: String) {
+        commitPolicy.commitText(candidate)
+        clearSession()
+    }
+
+    fun handleSyllableSelected(syllable: String) {
+        _displayPinyinText.value = syllable
+        _candidateList.value = engineAdapter.searchBySyllable(syllable)
+    }
+
+    fun setEnglishMode(isEnglish: Boolean) {
+        _isEnglishMode.value = isEnglish
+        clearSession()
+    }
+
+    fun setBound(bound: Boolean) {
+        engineAdapter.isBound = bound
+    }
+
+    private fun updateRawInput(newInput: String) {
+        _rawInput.value = newInput
+        val result = engineAdapter.searchPinyin(newInput, isT9Mode)
+        _displayPinyinText.value = result.first
+        _candidateList.value = result.second
+        _t9PinyinCombinations.value = result.third
+    }
+
+    private fun clearSession() {
+        _rawInput.value = ""
+        _displayPinyinText.value = ""
+        _candidateList.value = emptyList()
+        _t9PinyinCombinations.value = emptyList()
+        engineAdapter.resetSearch()
+    }
+}
