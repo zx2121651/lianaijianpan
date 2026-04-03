@@ -136,7 +136,7 @@ class InputSessionController(
     private fun updateRawInput(newInput: String) {
         _rawInput.value = newInput
 
-        // Cancel previous job if it's still running (throttle/debounce effect natively)
+        // Cancel previous job if it's still running
         searchJob?.cancel()
 
         if (newInput.isEmpty()) {
@@ -148,6 +148,10 @@ class InputSessionController(
         }
 
         searchJob = scope.launch {
+            // Debounce delay to prevent overwhelming the JNI C++ engine on fast typing
+            // This ensures we only run nativeImSearch when the user pauses briefly
+            delay(50)
+
             val result = engineAdapter.searchPinyin(newInput, isT9Mode)
             _displayPinyinText.value = result.first
             _candidateList.value = result.second
