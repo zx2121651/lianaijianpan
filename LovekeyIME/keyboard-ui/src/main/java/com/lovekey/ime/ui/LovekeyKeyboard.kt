@@ -3,9 +3,13 @@ package com.lovekey.ime.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -70,12 +74,14 @@ fun LovekeyKeyboard(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(boardColor)
-            .padding(bottom = 12.dp)
-    ) {
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(boardColor)
+                .padding(bottom = 12.dp)
+        ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -86,11 +92,6 @@ fun LovekeyKeyboard(
         ) {
             if (currentPinyinText.isNotEmpty()) {
                 Row(
-                    modifier = Modifier.clickable {
-                        if (t9PinyinCombinations.size > 1) {
-                            isSyllableBarExpanded = !isSyllableBarExpanded
-                        }
-                    },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -98,16 +99,8 @@ fun LovekeyKeyboard(
                         color = accentColor,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(end = if (t9PinyinCombinations.size > 1) 4.dp else 12.dp)
+                        modifier = Modifier.padding(end = 12.dp)
                     )
-                    if (t9PinyinCombinations.size > 1) {
-                        Text(
-                            text = if (isSyllableBarExpanded) "▲" else "▼",
-                            color = accentColor,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
-                    }
                 }
 
                 Box(
@@ -117,51 +110,40 @@ fun LovekeyKeyboard(
                         .background(Color(0xFFF0EBEA))
                 )
 
-                if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
-                    LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        items(t9PinyinCombinations) { pinyin ->
-                            Text(
-                                text = pinyin,
-                                color = if (pinyin == currentPinyinText) accentColor else textColor,
-                                fontSize = 16.sp,
-                                fontWeight = if (pinyin == currentPinyinText) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color.Transparent)
-                                    .clickable {
-                                        isSyllableBarExpanded = false
-                                        onSyllableSelected(pinyin)
-                                    }
-                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                            )
-                        }
+                LazyRow(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp, end = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(candidateList) { candidate ->
+                        Text(
+                            text = candidate,
+                            color = textColor,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Normal,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { onCandidateSelected(candidate) }
+                                .padding(horizontal = 6.dp, vertical = 6.dp)
+                        )
                     }
-                } else {
-                    LazyRow(
+                }
+
+                if (t9PinyinCombinations.size > 1) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(18.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .clickable {
+                                isSyllableBarExpanded = !isSyllableBarExpanded
+                            }
+                            .padding(start = 8.dp)
                     ) {
-                        items(candidateList) { candidate ->
-                            Text(
-                                text = candidate,
-                                color = textColor,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Normal,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable { onCandidateSelected(candidate) }
-                                    .padding(horizontal = 6.dp, vertical = 6.dp)
-                            )
-                        }
+                        Text(
+                            text = if (isSyllableBarExpanded) "▲" else "▼",
+                            color = accentColor,
+                            fontSize = 14.sp
+                        )
                     }
                 }
             } else {
@@ -266,6 +248,53 @@ fun LovekeyKeyboard(
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
             )
+        }
+
+        } // End of Column
+
+        if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { isSyllableBarExpanded = false } // Click outside to close
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 52.dp)
+                        .clickable(enabled = false) {}, // Intercept clicks so they don't close the overlay
+                    color = Color.White,
+                    shadowElevation = 8.dp
+                ) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(t9PinyinCombinations) { pinyin ->
+                            Text(
+                                text = pinyin,
+                                color = if (pinyin == currentPinyinText) accentColor else textColor,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center,
+                                fontWeight = if (pinyin == currentPinyinText) FontWeight.Bold else FontWeight.Normal,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color(0xFFF7F7F7))
+                                    .clickable {
+                                        isSyllableBarExpanded = false
+                                        onSyllableSelected(pinyin)
+                                    }
+                                    .padding(vertical = 10.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
