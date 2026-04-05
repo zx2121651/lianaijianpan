@@ -143,7 +143,11 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 val displayPinyinText by sessionController.displayPinyinText.collectAsState()
                 val candidateList by sessionController.candidateList.collectAsState()
                 val t9PinyinCombinations by sessionController.t9PinyinCombinations.collectAsState()
+
                 val isEnglishMode by sessionController.isEnglishMode.collectAsState()
+                val currentMode by sessionController.currentMode.collectAsState()
+                val previousMode by sessionController.previousMode.collectAsState()
+
 
                 LovekeyKeyboard(
                     currentPinyinText = displayPinyinText,
@@ -151,7 +155,8 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     t9PinyinCombinations = t9PinyinCombinations,
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
-                    onModeChanged = { sessionController.setEnglishMode(it) },
+                    onEnglishModeChanged = { sessionController.setEnglishMode(it) },
+                    onKeyboardModeChanged = { sessionController.setKeyboardMode(it) },
                     onKeyPress = { key -> sessionController.handleKeyPress(key) },
                     onCandidateSelected = { candidate -> sessionController.handleCandidateSelected(candidate) },
                     onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) }

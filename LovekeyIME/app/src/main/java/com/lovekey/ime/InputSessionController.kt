@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.lovekey.ime.ui.KeyboardMode
 
 class InputSessionController(
     private val engineAdapter: CandidateEngineAdapter,
@@ -27,6 +28,13 @@ class InputSessionController(
 
     private val _isEnglishMode = MutableStateFlow(false)
     val isEnglishMode: StateFlow<Boolean> = _isEnglishMode.asStateFlow()
+
+    private val _currentMode = MutableStateFlow(KeyboardMode.QWERTY)
+    val currentMode: StateFlow<KeyboardMode> = _currentMode.asStateFlow()
+
+    private val _previousMode = MutableStateFlow(KeyboardMode.QWERTY)
+    val previousMode: StateFlow<KeyboardMode> = _previousMode.asStateFlow()
+
 
     private var isT9Mode = false
 
@@ -120,6 +128,18 @@ class InputSessionController(
         }
     }
 
+
+    fun setKeyboardMode(mode: KeyboardMode) {
+        if (mode != KeyboardMode.SYMBOL && mode != KeyboardMode.HANDWRITING && !_isEnglishMode.value) {
+            _previousMode.value = _currentMode.value
+        }
+        _currentMode.value = mode
+    }
+
+    fun setPreviousMode(mode: KeyboardMode) {
+        _previousMode.value = mode
+    }
+
     fun setEnglishMode(isEnglish: Boolean) {
         _isEnglishMode.value = isEnglish
         clearSession()
@@ -159,7 +179,7 @@ class InputSessionController(
         }
     }
 
-    private fun clearSession() {
+    fun clearSession() {
         searchJob?.cancel()
         _rawInput.value = ""
         _displayPinyinText.value = ""

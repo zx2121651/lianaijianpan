@@ -34,12 +34,15 @@ fun LovekeyKeyboard(
     currentPinyinText: String,
     candidateList: List<String>,
     t9PinyinCombinations: List<String> = emptyList(),
+    currentModeExternal: KeyboardMode = KeyboardMode.QWERTY,
+    previousModeExternal: KeyboardMode = KeyboardMode.QWERTY,
     isEnglishModeExternal: Boolean = false,
     enterKeyText: String = "发送",
     onKeyPress: (String) -> Unit,
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
-    onModeChanged: (Boolean) -> Unit = {}
+    onEnglishModeChanged: (Boolean) -> Unit = {},
+    onKeyboardModeChanged: (KeyboardMode) -> Unit = {}
 ) {
     val boardColor = Color(0xFFFDFBFB)
     val keyColor = Color(0xFFFFFFFF)
@@ -50,18 +53,6 @@ fun LovekeyKeyboard(
     val unselectedTabColor = Color(0xFFD6D1D1)
 
     val keyCornerRadius = 10.dp
-
-    var currentMode by remember { mutableStateOf(KeyboardMode.QWERTY) }
-
-    val modeState = remember { mutableStateOf(currentMode) }
-    LaunchedEffect(modeState.value) { currentMode = modeState.value }
-
-    var previousMode by remember { mutableStateOf(KeyboardMode.QWERTY) }
-    LaunchedEffect(currentMode) {
-        if (currentMode != KeyboardMode.SYMBOL && currentMode != KeyboardMode.HANDWRITING && !isEnglishModeExternal) {
-            previousMode = currentMode
-        }
-    }
 
     var isEnglishMode by remember { mutableStateOf(isEnglishModeExternal) }
     LaunchedEffect(isEnglishModeExternal) { isEnglishMode = isEnglishModeExternal }
@@ -154,29 +145,29 @@ fun LovekeyKeyboard(
                 ) {
                     Text(
                         text = "全拼",
-                        color = if (currentMode == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
-                        fontWeight = if (currentMode == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
+                        color = if (currentModeExternal == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
+                        fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { modeState.value = KeyboardMode.QWERTY }
+                            .clickable { onKeyboardModeChanged(KeyboardMode.QWERTY) }
                             .padding(8.dp)
                     )
                     Text(
                         text = "九键",
-                        color = if (currentMode == KeyboardMode.T9) accentColor else unselectedTabColor,
-                        fontWeight = if (currentMode == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
+                        color = if (currentModeExternal == KeyboardMode.T9) accentColor else unselectedTabColor,
+                        fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { modeState.value = KeyboardMode.T9 }
+                            .clickable { onKeyboardModeChanged(KeyboardMode.T9) }
                             .padding(8.dp)
                     )
                     Text(
                         text = "手写",
-                        color = if (currentMode == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
-                        fontWeight = if (currentMode == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
+                        color = if (currentModeExternal == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
+                        fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { modeState.value = KeyboardMode.HANDWRITING }
+                            .clickable { onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                             .padding(8.dp)
                     )
                 }
@@ -185,12 +176,18 @@ fun LovekeyKeyboard(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        when (currentMode) {
+        when (currentModeExternal) {
             KeyboardMode.QWERTY -> {
                 val shiftState = remember { mutableStateOf(ShiftState.LOWERCASE) }
                 QwertyKeyboard(
                     shiftState = shiftState,
-                    currentMode = modeState,
+                                    currentMode = object : MutableState<KeyboardMode> {
+                    override var value: KeyboardMode
+                        get() = currentModeExternal
+                        set(v) { onKeyboardModeChanged(v) }
+                    override fun component1() = currentModeExternal
+                    override fun component2(): (KeyboardMode) -> Unit = { onKeyboardModeChanged(it) }
+                },
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
                     textColor = textColor,
@@ -201,15 +198,21 @@ fun LovekeyKeyboard(
                     onKeyPress = onKeyPress,
                     onModeChanged = {
                         isEnglishMode = it
-                        onModeChanged(it)
-                        if (!it && previousMode == KeyboardMode.T9) {
-                            currentMode = KeyboardMode.T9
+                        onEnglishModeChanged(it)
+                        if (!it && previousModeExternal == KeyboardMode.T9) {
+                            onKeyboardModeChanged(KeyboardMode.T9)
                         }
                     }
                 )
             }
             KeyboardMode.T9 -> T9Keyboard(
-                currentMode = modeState,
+                                currentMode = object : MutableState<KeyboardMode> {
+                    override var value: KeyboardMode
+                        get() = currentModeExternal
+                        set(v) { onKeyboardModeChanged(v) }
+                    override fun component1() = currentModeExternal
+                    override fun component2(): (KeyboardMode) -> Unit = { onKeyboardModeChanged(it) }
+                },
                 isEnglishModeExternal = isEnglishMode,
                 enterKeyText = enterKeyText,
                 textColor = textColor,
@@ -220,9 +223,8 @@ fun LovekeyKeyboard(
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress,
                 onModeChanged = {
-                    previousMode = KeyboardMode.T9
                     isEnglishMode = it
-                    onModeChanged(it)
+                    onEnglishModeChanged(it)
                 }
             )
             KeyboardMode.HANDWRITING -> HandwritingKeyboard(
@@ -234,13 +236,19 @@ fun LovekeyKeyboard(
                 onKeyPress = onKeyPress
             )
             KeyboardMode.SYMBOL -> SymbolKeyboard(
-                currentMode = modeState,
-                previousMode = previousMode,
+                                currentMode = object : MutableState<KeyboardMode> {
+                    override var value: KeyboardMode
+                        get() = currentModeExternal
+                        set(v) { onKeyboardModeChanged(v) }
+                    override fun component1() = currentModeExternal
+                    override fun component2(): (KeyboardMode) -> Unit = { onKeyboardModeChanged(it) }
+                },
+                previousMode = previousModeExternal,
                 enterKeyText = enterKeyText,
                 textColor = textColor,
                 onModeChanged = {
                     isEnglishMode = it
-                    onModeChanged(it)
+                    onEnglishModeChanged(it)
                 },
                 keyColor = keyColor,
                 functionKeyColor = functionKeyColor,
