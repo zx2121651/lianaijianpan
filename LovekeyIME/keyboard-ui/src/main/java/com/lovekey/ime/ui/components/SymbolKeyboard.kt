@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -38,10 +40,14 @@ fun SymbolKeyboard(
     keyCornerRadius: androidx.compose.ui.unit.Dp,
     onKeyPress: (String) -> Unit
 ) {
-    val categories = listOf("常用", "数字", "中文", "英文", "数学", "网络", "序号")
+    val view = LocalView.current
+    val categories = listOf("表情", "常用", "数字", "中文", "英文", "数学", "网络", "序号")
     var currentCategory by remember { mutableStateOf(categories[0]) }
 
     val symbolMap = mapOf(
+                "表情" to listOf(
+            "😀", "😁", "😂", "🤣", "😃", "😄", "😅", "😆", "😉", "😊", "😋", "😎", "😍", "😘", "😗", "😙", "😚", "☺", "🙂", "🤗", "🤩", "🤔", "🤨", "😐", "😑", "😶", "🙄", "😏", "😣", "😥", "😮", "🤐", "😯", "😪", "😫", "😴", "😌", "😛", "😜", "😝", "🤤", "😒", "😓", "😔", "😕", "🙃", "🤑", "😲", "☹", "🙁", "😖", "😞", "😟", "😤", "😢", "😭", "😦", "😧", "😨", "😩", "🤯", "😬", "😰", "😱", "😳", "🤪", "😵", "😡", "😠", "🤬", "😷", "🤒", "🤕", "🤢", "🤮", "🤧", "😇", "🤠", "🤡", "🤥", "🤫", "🤭", "🧐", "🤓", "😈", "👿", "👹", "👺", "💀", "👻", "👽", "👾", "🤖", "💩", "😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾", "🙈", "🙉", "🙊", "🐵", "🐒", "🦍", "🐶", "🐕", "🐩", "🐺", "🦊", "🦝", "🐱", "🐈", "🦁", "🐯", "🐅", "🐆", "🐴", "🐎", "🦄", "🦓", "🦌", "🐮", "🐂", "🐃", "🐄", "🐷", "🐖", "🐗", "🐽", "🐏", "🐑", "🐐", "🐪", "🐫", "🦙", "🦒", "🐘", "🦏", "🦛", "🐭", "🐁", "🐀", "🐹", "🐰", "🐇", "🐿", "🦔", "🦇", "熊", "🐨", "熊猫", "🦘", "🦡", "🐾", "🦃", "🐔", "🐓", "🐣", "🐤", "🐥", "🐦", "🐧", "🕊", "🦅", "鸭", "🦢", "🦉", "🦚", "鹦鹉", "🐸", "🐊", "🐢", "🦎", "🐍", "🐲", "🐉", "🦕", "🦖", "🐳", "🐋", "🐬", "鱼", "热带鱼", "🐡", "鲨鱼", "🐙", "🐚", "蟹", "虾", "🦑", "蜗牛", "🦋", "🐛", "蚂蚁", "🐝", "瓢虫", "蟋蟀", "蜘蛛", "🕸", "🦂", "蚊子", "微生物", "💐", "樱花", "💮", "🌹", "🥀", "🌺", "🌻", "🌼", "郁金香", "🌱", "松树", "🌳", "🌴", "🌵", "🌾", "🌿", "🍀", "枫叶", "🍂", "🍃"
+        ),
         "常用" to listOf("，", "。", "？", "！", "、", "；", "：", "“", "”", "‘", "’", "（", "）", "【", "】", "《", "》", "…", "—", "～"),
         "数字" to listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "+", "-", "*", "/", "=", "%", ".", ","),
         "中文" to listOf("￥", "·", "ˉ", "ˇ", "¨", "々", "‖", "「", "」", "『", "』", "〔", "〕", "〈", "〉", "〇"),
@@ -70,7 +76,8 @@ fun SymbolKeyboard(
                         .fillMaxWidth()
                         .weight(1f)
                         .background(if (isSelected) Color.White else Color.Transparent)
-                        .clickable { currentCategory = category },
+                        .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+currentCategory = category },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -88,8 +95,8 @@ fun SymbolKeyboard(
                     .fillMaxWidth()
                     .weight(1f)
                     .background(Color(0xFFE5E5E5)) // slightly darker for function key feeling
-                    .clickable {
-                        currentMode.value = previousMode
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+currentMode.value = previousMode
                     },
                 contentAlignment = Alignment.Center
             ) {
@@ -125,7 +132,8 @@ fun SymbolKeyboard(
                         modifier = Modifier
                             .height(42.dp)
                             .clip(RoundedCornerShape(keyCornerRadius))
-                            .clickable { onKeyPress(symbol) },
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress(symbol) },
                         color = keyColor,
                         shadowElevation = 0.5.dp,
                         shape = RoundedCornerShape(keyCornerRadius)
@@ -156,7 +164,8 @@ fun SymbolKeyboard(
                         .fillMaxHeight()
                         .padding(end = 4.dp)
                         .clip(RoundedCornerShape(keyCornerRadius))
-                        .clickable { onKeyPress("DEL") },
+                        .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("DEL") },
                     color = functionKeyColor,
                     shadowElevation = 0.5.dp,
                     shape = RoundedCornerShape(keyCornerRadius)
@@ -172,7 +181,8 @@ fun SymbolKeyboard(
                         .fillMaxHeight()
                         .padding(horizontal = 4.dp)
                         .clip(RoundedCornerShape(keyCornerRadius))
-                        .clickable { onKeyPress("SPACE") },
+                        .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("SPACE") },
                     color = keyColor,
                     shadowElevation = 0.5.dp,
                     shape = RoundedCornerShape(keyCornerRadius)
@@ -188,7 +198,8 @@ fun SymbolKeyboard(
                         .fillMaxHeight()
                         .padding(start = 4.dp)
                         .clip(RoundedCornerShape(keyCornerRadius))
-                        .clickable { onKeyPress("ENT") },
+                        .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("ENT") },
                     color = accentColor,
                     shadowElevation = 0.5.dp,
                     shape = RoundedCornerShape(keyCornerRadius)

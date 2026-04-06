@@ -7,8 +7,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -30,8 +37,14 @@ fun T9Keyboard(
     secondaryTextColor: Color,
     keyCornerRadius: androidx.compose.ui.unit.Dp,
     onKeyPress: (String) -> Unit,
-    onModeChanged: (Boolean) -> Unit
+    onModeChanged: (Boolean) -> Unit,
+    onCursorMove: (Int) -> Unit = {}
 ) {
+    val view = LocalView.current
+    val currentOnKeyPress by androidx.compose.runtime.rememberUpdatedState(onKeyPress)
+    val currentOnModeChanged by androidx.compose.runtime.rememberUpdatedState(onModeChanged)
+    val currentOnCursorMove by androidx.compose.runtime.rememberUpdatedState(onCursorMove)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -52,7 +65,8 @@ fun T9Keyboard(
                         .weight(1f)
                         .padding(horizontal = 4.dp, vertical = 3.dp)
                         .clip(RoundedCornerShape(keyCornerRadius))
-                        .clickable { if (key == "符号") currentMode.value = KeyboardMode.SYMBOL else onKeyPress(key) },
+                        .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+if (key == "符号") currentMode.value = KeyboardMode.SYMBOL else onKeyPress(key) },
                     color = functionKeyColor,
                     shadowElevation = 0.5.dp,
                     shape = RoundedCornerShape(keyCornerRadius)
@@ -92,20 +106,55 @@ fun T9Keyboard(
                                 .fillMaxHeight()
                                 .padding(horizontal = 4.dp, vertical = 3.dp)
                                 .clip(RoundedCornerShape(keyCornerRadius))
-                                .clickable {
-                                    if (cell.first == "123" || cell.first == "符号") {
-                                        currentMode.value = KeyboardMode.SYMBOL
-                                    } else if (cell.first == "中/英") {
-                                        currentMode.value = KeyboardMode.QWERTY
-                                        onModeChanged(true)
-                                    } else if (isSpace) {
-                                        onKeyPress("SPACE")
-                                    } else if (cell.first == "1") {
-                                        onKeyPress("1")
-                                    } else if (cell.second.isNotEmpty()) {
-                                        onKeyPress(cell.second)
-                                    } else {
-                                        onKeyPress(cell.first)
+                                .pointerInput(Unit) {
+                                    kotlinx.coroutines.coroutineScope {
+                                        launch {
+                                            detectTapGestures(
+                                                onPress = {
+                                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                },
+                                                onTap = {
+                                                    if (cell.first == "123" || cell.first == "符号") {
+                                                        currentMode.value = KeyboardMode.SYMBOL
+                                                    } else if (cell.first == "中/英") {
+                                                        currentMode.value = KeyboardMode.QWERTY
+                                                        currentOnModeChanged.invoke(true)
+                                                    } else if (isSpace) {
+                                                        currentOnKeyPress.invoke("SPACE")
+                                                    } else if (cell.first == "1") {
+                                                        currentOnKeyPress.invoke("1")
+                                                    } else if (cell.second.isNotEmpty()) {
+                                                        currentOnKeyPress.invoke(cell.second)
+                                                    } else {
+                                                        currentOnKeyPress.invoke(cell.first)
+                                                    }
+                                                }
+                                            )
+                                        }
+                                        if (isSpace) {
+                                            launch {
+                                                var accumulatedDrag = 0f
+                                                detectHorizontalDragGestures(
+                                                    onDragStart = {
+                                                        accumulatedDrag = 0f
+                                                    },
+                                                    onDragEnd = {},
+                                                    onDragCancel = {},
+                                                    onHorizontalDrag = { change, dragAmount ->
+                                                        change.consume()
+                                                        accumulatedDrag += dragAmount
+                                                        val threshold = 30f
+                                                        if (accumulatedDrag > threshold) {
+                                                            currentOnCursorMove.invoke(1)
+                                                            accumulatedDrag -= threshold
+                                                        } else if (accumulatedDrag < -threshold) {
+                                                            currentOnCursorMove.invoke(-1)
+                                                            accumulatedDrag += threshold
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 },
                             color = bgColor,
@@ -144,7 +193,8 @@ fun T9Keyboard(
                     .weight(1f)
                     .padding(horizontal = 4.dp, vertical = 3.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { onKeyPress("DEL") },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("DEL") },
                 color = functionKeyColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)
@@ -160,7 +210,8 @@ fun T9Keyboard(
                     .weight(1f)
                     .padding(horizontal = 4.dp, vertical = 3.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { onKeyPress("CLEAR") },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("CLEAR") },
                 color = functionKeyColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)
@@ -176,7 +227,8 @@ fun T9Keyboard(
                     .weight(2f)
                     .padding(horizontal = 4.dp, vertical = 3.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { onKeyPress("ENT") },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("ENT") },
                 color = accentColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)

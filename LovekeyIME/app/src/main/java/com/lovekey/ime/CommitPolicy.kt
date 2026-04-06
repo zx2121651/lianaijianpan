@@ -48,6 +48,17 @@ class CommitPolicy {
     /**
      * 处理动态回车键
      */
+
+    fun moveCursor(offset: Int) {
+        val request = android.view.inputmethod.ExtractedTextRequest()
+        val text = inputConnection?.getExtractedText(request, 0)
+        if (text != null) {
+            val oldPos = text.selectionStart
+            val newPos = (oldPos + offset).coerceIn(0, text.text.length)
+            inputConnection?.setSelection(newPos, newPos)
+        }
+    }
+
     fun commitNewlineOrAction() {
         val action = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_DONE
         if (action == EditorInfo.IME_ACTION_NONE || action == EditorInfo.IME_ACTION_UNSPECIFIED) {

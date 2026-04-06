@@ -153,13 +153,16 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     currentPinyinText = displayPinyinText,
                     candidateList = candidateList,
                     t9PinyinCombinations = t9PinyinCombinations,
+                    currentModeExternal = currentMode,
+                    previousModeExternal = previousMode,
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
                     onEnglishModeChanged = { sessionController.setEnglishMode(it) },
                     onKeyboardModeChanged = { sessionController.setKeyboardMode(it) },
-                    onKeyPress = { key -> sessionController.handleKeyPress(key) },
+                                        onKeyPress = { key -> sessionController.handleKeyPress(key) },
                     onCandidateSelected = { candidate -> sessionController.handleCandidateSelected(candidate) },
-                    onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) }
+                    onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) },
+                    onCursorMove = { offset -> sessionController.handleCursorMove(offset) }
                 )
             }
         }
