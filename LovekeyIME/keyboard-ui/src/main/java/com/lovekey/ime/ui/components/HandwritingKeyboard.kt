@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -22,6 +24,7 @@ fun HandwritingKeyboard(
     enterKeyText: String,
     textColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit
 ) {
+    val view = LocalView.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,7 +64,8 @@ fun HandwritingKeyboard(
                     .weight(1f)
                     .padding(bottom = 4.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { onKeyPress("DEL") },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("DEL") },
                 color = functionKeyColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)
@@ -77,7 +81,8 @@ fun HandwritingKeyboard(
                     .weight(1f)
                     .padding(vertical = 4.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+},
                 color = functionKeyColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)
@@ -93,7 +98,8 @@ fun HandwritingKeyboard(
                     .weight(2f)
                     .padding(top = 4.dp)
                     .clip(RoundedCornerShape(keyCornerRadius))
-                    .clickable { onKeyPress("ENT") },
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyPress("ENT") },
                 color = accentColor,
                 shadowElevation = 0.5.dp,
                 shape = RoundedCornerShape(keyCornerRadius)

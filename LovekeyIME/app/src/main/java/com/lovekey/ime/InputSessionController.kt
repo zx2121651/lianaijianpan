@@ -179,6 +179,11 @@ class InputSessionController(
         }
     }
 
+
+    fun handleCursorMove(offset: Int) {
+        commitPolicy.moveCursor(offset)
+    }
+
     fun clearSession() {
         searchJob?.cancel()
         _rawInput.value = ""

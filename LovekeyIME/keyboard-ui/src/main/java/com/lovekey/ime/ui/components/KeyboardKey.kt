@@ -2,12 +2,14 @@ package com.lovekey.ime.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -18,6 +20,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
+import androidx.compose.ui.platform.LocalView
+import android.view.HapticFeedbackConstants
+
 
 @Composable
 fun KeyboardKey(
@@ -29,9 +34,13 @@ fun KeyboardKey(
     fontWeight: FontWeight,
     keyCornerRadius: Dp,
     showPopup: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDrag: ((Int) -> Unit)? = null
 ) {
     var isPressed by remember { mutableStateOf(false) }
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val view = LocalView.current
 
     Surface(
         // Weight must be applied inside RowScope, so we pass Modifier instead
@@ -41,20 +50,48 @@ modifier = modifier
             .height(46.dp)
             .clip(RoundedCornerShape(keyCornerRadius))
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        try {
-                            tryAwaitRelease()
-                        } finally {
-                            isPressed = false
-                        }
-                    },
-                    onTap = {
-                        onClick()
+                kotlinx.coroutines.coroutineScope {
+                    launch {
+                        detectTapGestures(
+                            onPress = {
+                                isPressed = true
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                try {
+                                    tryAwaitRelease()
+                                } finally {
+                                    isPressed = false
+                                }
+                            },
+                            onTap = {
+                                currentOnClick()
+                            }
+                        )
                     }
-                )
-            },
+                    if (currentOnDrag != null) {
+                        launch {
+                            var accumulatedDrag = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = {
+                                    accumulatedDrag = 0f
+                                },
+                                onDragEnd = {},
+                                onDragCancel = {},
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    accumulatedDrag += dragAmount
+                                    val threshold = 30f
+                                    if (accumulatedDrag > threshold) {
+                                        currentOnDrag?.invoke(1)
+                                        accumulatedDrag -= threshold
+                                    } else if (accumulatedDrag < -threshold) {
+                                        currentOnDrag?.invoke(-1)
+                                        accumulatedDrag += threshold
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }            },
         color = bgColor,
         shadowElevation = 0.5.dp,
         shape = RoundedCornerShape(keyCornerRadius)

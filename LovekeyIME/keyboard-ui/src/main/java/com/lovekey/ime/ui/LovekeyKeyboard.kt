@@ -19,6 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import com.lovekey.ime.ui.components.*
 import androidx.compose.ui.Alignment
+import android.view.HapticFeedbackConstants
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -42,7 +44,8 @@ fun LovekeyKeyboard(
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
     onEnglishModeChanged: (Boolean) -> Unit = {},
-    onKeyboardModeChanged: (KeyboardMode) -> Unit = {}
+    onKeyboardModeChanged: (KeyboardMode) -> Unit = {},
+    onCursorMove: (Int) -> Unit = {}
 ) {
     val boardColor = Color(0xFFFDFBFB)
     val keyColor = Color(0xFFFFFFFF)
@@ -57,11 +60,14 @@ fun LovekeyKeyboard(
     var isEnglishMode by remember { mutableStateOf(isEnglishModeExternal) }
     LaunchedEffect(isEnglishModeExternal) { isEnglishMode = isEnglishModeExternal }
 
+    val view = LocalView.current
     var isSyllableBarExpanded by remember { mutableStateOf(false) }
+    var isCandidatePanelExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentPinyinText) {
         if (currentPinyinText.isEmpty() || t9PinyinCombinations.size <= 1) {
             isSyllableBarExpanded = false
+            isCandidatePanelExpanded = false
         }
     }
 
@@ -116,7 +122,8 @@ fun LovekeyKeyboard(
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .clickable { onCandidateSelected(candidate) }
+                                .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onCandidateSelected(candidate) }
                                 .padding(horizontal = 6.dp, vertical = 6.dp)
                         )
                     }
@@ -125,13 +132,29 @@ fun LovekeyKeyboard(
                 if (t9PinyinCombinations.size > 1) {
                     Box(
                         modifier = Modifier
-                            .clickable {
-                                isSyllableBarExpanded = !isSyllableBarExpanded
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isSyllableBarExpanded = !isSyllableBarExpanded
                             }
                             .padding(start = 8.dp)
                     ) {
                         Text(
                             text = if (isSyllableBarExpanded) "▲" else "▼",
+                            color = accentColor,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                if (candidateList.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isCandidatePanelExpanded = !isCandidatePanelExpanded
+                            }
+                            .padding(start = 8.dp)
+                    ) {
+                        Text(
+                            text = if (isCandidatePanelExpanded) "▲" else "▼",
                             color = accentColor,
                             fontSize = 14.sp
                         )
@@ -149,7 +172,8 @@ fun LovekeyKeyboard(
                         fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { onKeyboardModeChanged(KeyboardMode.QWERTY) }
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyboardModeChanged(KeyboardMode.QWERTY) }
                             .padding(8.dp)
                     )
                     Text(
@@ -158,7 +182,8 @@ fun LovekeyKeyboard(
                         fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { onKeyboardModeChanged(KeyboardMode.T9) }
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyboardModeChanged(KeyboardMode.T9) }
                             .padding(8.dp)
                     )
                     Text(
@@ -167,7 +192,8 @@ fun LovekeyKeyboard(
                         fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 15.sp,
                         modifier = Modifier
-                            .clickable { onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
+                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                             .padding(8.dp)
                     )
                 }
@@ -202,7 +228,8 @@ fun LovekeyKeyboard(
                         if (!it && previousModeExternal == KeyboardMode.T9) {
                             onKeyboardModeChanged(KeyboardMode.T9)
                         }
-                    }
+                    },
+                    onCursorMove = onCursorMove
                 )
             }
             KeyboardMode.T9 -> T9Keyboard(
@@ -225,7 +252,8 @@ fun LovekeyKeyboard(
                 onModeChanged = {
                     isEnglishMode = it
                     onEnglishModeChanged(it)
-                }
+                },
+                onCursorMove = onCursorMove
             )
             KeyboardMode.HANDWRITING -> HandwritingKeyboard(
                 enterKeyText = enterKeyText,
@@ -264,7 +292,8 @@ fun LovekeyKeyboard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable { isSyllableBarExpanded = false } // Click outside to close
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isSyllableBarExpanded = false } // Click outside to close
             ) {
                 Surface(
                     modifier = Modifier
@@ -293,8 +322,8 @@ fun LovekeyKeyboard(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color(0xFFF7F7F7))
-                                    .clickable {
-                                        isSyllableBarExpanded = false
+                                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isSyllableBarExpanded = false
                                         onSyllableSelected(pinyin)
                                     }
                                     .padding(vertical = 10.dp)
@@ -305,6 +334,52 @@ fun LovekeyKeyboard(
             }
         }
     }
+
+        if (isCandidatePanelExpanded && candidateList.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isCandidatePanelExpanded = false }
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 52.dp)
+                        .clickable(enabled = false) {},
+                    color = Color.White,
+                    shadowElevation = 8.dp
+                ) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(4),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(candidateList) { candidate ->
+                            Text(
+                                text = candidate,
+                                color = textColor,
+                                fontSize = 20.sp,
+                                textAlign = TextAlign.Center,
+                                fontWeight = FontWeight.Normal,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color(0xFFF7F7F7))
+                                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+isCandidatePanelExpanded = false
+                                        onCandidateSelected(candidate)
+                                    }
+                                    .padding(vertical = 10.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
 }
 
 

@@ -24,7 +24,8 @@ fun QwertyKeyboard(
     currentMode: MutableState<KeyboardMode>,
     isEnglishModeExternal: Boolean,
     enterKeyText: String,
-    textColor: Color, keyColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit, onModeChanged: (Boolean) -> Unit
+    textColor: Color, keyColor: Color, functionKeyColor: Color, accentColor: Color, keyCornerRadius: androidx.compose.ui.unit.Dp, onKeyPress: (String) -> Unit, onModeChanged: (Boolean) -> Unit,
+    onCursorMove: (Int) -> Unit = {}
 ) {
     val rows = listOf(
         listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p"),
@@ -80,6 +81,7 @@ fun QwertyKeyboard(
                     fontWeight = if (isFunctionKey || isActionKey) FontWeight.Medium else FontWeight.Light,
                     keyCornerRadius = keyCornerRadius,
                     showPopup = showPopup,
+                    onDrag = if (isSpaceKey) { { offset -> onCursorMove(offset) } } else null,
                     onClick = {
                         if (key == "SHIFT") {
                             shiftState.value = when (shiftState.value) {
