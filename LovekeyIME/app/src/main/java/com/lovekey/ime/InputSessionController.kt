@@ -114,8 +114,17 @@ class InputSessionController(
     }
 
     fun handleCandidateSelected(candidate: String) {
+        val currentPinyin = _displayPinyinText.value
+
         commitPolicy.commitText(candidate)
         clearSession()
+
+        // Asynchronously update frequency memory
+        if (currentPinyin.isNotEmpty()) {
+            scope.launch {
+                engineAdapter.chooseCandidate(candidate)
+            }
+        }
     }
 
     fun handleSyllableSelected(syllable: String) {
