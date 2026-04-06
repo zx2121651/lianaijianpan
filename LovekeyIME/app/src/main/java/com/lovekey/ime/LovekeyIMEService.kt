@@ -26,6 +26,14 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import com.android.inputmethod.pinyin.PinyinDecoderService
 import com.lovekey.ime.ui.LovekeyKeyboard
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.map
+import com.lovekey.ime.ui.host.dataStore
+import com.lovekey.ime.ui.host.SettingsKeys
+
 
 class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
 
@@ -47,7 +55,14 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     private val editorInfoState = mutableStateOf<EditorInfo?>(null)
 
     private val engineAdapter = CandidateEngineAdapter()
+
+
+
     private val commitPolicy = CommitPolicy()
+
+    private val serviceJob = kotlinx.coroutines.Job()
+    private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main + serviceJob)
+
     private val sessionController = InputSessionController(engineAdapter, commitPolicy)
 
     private val connection = object : ServiceConnection {
@@ -64,11 +79,24 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
             sessionController.setBound(false)
         }
     }
-
     override fun onCreate() {
         super.onCreate()
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+
+        serviceScope.launch {
+            dataStore.data.collect { prefs ->
+                engineAdapter.enableTypoCorrection = prefs[SettingsKeys.ENABLE_TYPO_CORRECTION] ?: true
+                engineAdapter.fuzzyZhZ = prefs[SettingsKeys.FUZZY_ZH_Z] ?: false
+                engineAdapter.fuzzyChC = prefs[SettingsKeys.FUZZY_CH_C] ?: false
+                engineAdapter.fuzzyShS = prefs[SettingsKeys.FUZZY_SH_S] ?: false
+                engineAdapter.fuzzyNL = prefs[SettingsKeys.FUZZY_N_L] ?: false
+                engineAdapter.fuzzyEnEng = prefs[SettingsKeys.FUZZY_EN_ENG] ?: false
+                engineAdapter.fuzzyInIng = prefs[SettingsKeys.FUZZY_IN_ING] ?: false
+                engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
+            }
+        }
+
 
         Intent(this, PinyinDecoderService::class.java).also { intent ->
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
@@ -77,6 +105,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceJob.cancel()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         store.clear()
         sessionController.destroy()

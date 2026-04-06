@@ -9,6 +9,16 @@ import java.util.concurrent.Executors
 class CandidateEngineAdapter {
     var isBound = false
 
+    var enableTypoCorrection = true
+    var fuzzyZhZ = false
+    var fuzzyChC = false
+    var fuzzyShS = false
+    var fuzzyNL = false
+    var fuzzyEnEng = false
+    var fuzzyInIng = false
+    var fuzzyAnAng = false
+
+
     // Use a single-threaded dispatcher for all JNI calls to prevent concurrent
     // modification of the underlying C++ Pinyin engine state, which can cause segfaults.
     private val jniDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
@@ -47,41 +57,53 @@ class CandidateEngineAdapter {
     }
 
     // Better approach:
-private fun expandFuzzyVariants(input: String): List<String> {
+    private fun expandFuzzyVariants(input: String): List<String> {
         val results = mutableSetOf(input)
 
-        // Common typo corrections (QWERTY fast typing)
-        val typoRules = mapOf(
-            "gn" to "ng", // qign -> qing
-            "mg" to "ng", // qimg -> qing (m is next to n)
-            "iou" to "iu", // jiou -> jiu
-            "uei" to "ui",
-            "uen" to "un"
-        )
-        for ((from, to) in typoRules) {
-            if (input.endsWith(from)) {
-                results.add(input.replace(from, to))
-            } else if (input.contains(from)) {
-                results.add(input.replace(from, to))
-            }
-        }
-
-        // Basic fuzzy pinyin mappings
-        val fuzzyRules = mapOf("zh" to "z", "z" to "zh", "ch" to "c", "c" to "ch", "sh" to "s", "s" to "sh", "n" to "l", "l" to "n", "en" to "eng", "eng" to "en", "in" to "ing", "ing" to "in", "an" to "ang", "ang" to "an")
-
-        val expandedFromTypos = results.toList()
-        for (variant in expandedFromTypos) {
-            for ((from, to) in fuzzyRules) {
-                if (variant.contains(from)) {
-                    results.add(variant.replace(from, to))
+        if (enableTypoCorrection) {
+            val typoRules = mapOf(
+                "gn" to "ng",
+                "mg" to "ng",
+                "iou" to "iu",
+                "uei" to "ui",
+                "uen" to "un"
+            )
+            for ((from, to) in typoRules) {
+                if (input.endsWith(from)) {
+                    results.add(input.substring(0, input.length - from.length) + to)
+                } else if (input.contains(from)) {
+                    results.add(input.replaceFirst(from, to))
                 }
             }
         }
 
-        // Limit to top variants to avoid JNI lag
+        val initialRules = mutableMapOf<String, String>()
+        if (fuzzyZhZ) { initialRules["zh"] = "z"; initialRules["z"] = "zh" }
+        if (fuzzyChC) { initialRules["ch"] = "c"; initialRules["c"] = "ch" }
+        if (fuzzyShS) { initialRules["sh"] = "s"; initialRules["s"] = "sh" }
+        if (fuzzyNL) { initialRules["n"] = "l"; initialRules["l"] = "n" }
+
+        val finalRules = mutableMapOf<String, String>()
+        if (fuzzyEnEng) { finalRules["eng"] = "en"; finalRules["en"] = "eng" }
+        if (fuzzyInIng) { finalRules["ing"] = "in"; finalRules["in"] = "ing" }
+        if (fuzzyAnAng) { finalRules["ang"] = "an"; finalRules["an"] = "ang" }
+
+        val expandedFromTypos = results.toList()
+        for (variant in expandedFromTypos) {
+            for ((from, to) in initialRules) {
+                if (variant.startsWith(from)) {
+                    results.add(to + variant.substring(from.length))
+                }
+            }
+            for ((from, to) in finalRules) {
+                if (variant.endsWith(from)) {
+                    results.add(variant.substring(0, variant.length - from.length) + to)
+                }
+            }
+        }
+
         return results.take(6).toList()
     }
-
 
     suspend fun searchPinyin(input: String, isT9: Boolean = false): Triple<String, List<String>, List<String>> = withContext(jniDispatcher) {
         if (input.isEmpty()) {
