@@ -21,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -30,7 +31,8 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
-        val PERSONA_ID = stringPreferencesKey("persona_id")
+            val AFFECTION_SCORE = intPreferencesKey("affection_score")
+    val PERSONA_ID = stringPreferencesKey("persona_id")
     val ENABLE_TYPO_CORRECTION = booleanPreferencesKey("enable_typo_correction")
     val FUZZY_ZH_Z = booleanPreferencesKey("fuzzy_zh_z")
     val FUZZY_CH_C = booleanPreferencesKey("fuzzy_ch_c")
