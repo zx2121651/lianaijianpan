@@ -31,8 +31,9 @@ data class PersonaCard(val id: String, val title: String, val author: String, va
 fun StoreScreen(context: Context) {
     var targetPercentage by remember { mutableStateOf(0f) }
 
-    val scope = rememberCoroutineScope()
+val scope = rememberCoroutineScope()
     val currentPersonaId by context.dataStore.data.map { it[SettingsKeys.PERSONA_ID] ?: "theme_girl" }.collectAsState(initial = "theme_girl")
+    val affectionScore by context.dataStore.data.map { it[SettingsKeys.AFFECTION_SCORE] ?: 150 }.collectAsState(initial = 150)
 
 
     val animatedPercentage by animateFloatAsState(
@@ -40,9 +41,9 @@ fun StoreScreen(context: Context) {
         animationSpec = tween(durationMillis = 2500)
     )
 
-    LaunchedEffect(Unit) {
-        delay(500)
-        targetPercentage = 0.85f // Simulate "Soul Match" loading up to 85%
+LaunchedEffect(affectionScore) {
+        delay(300)
+        targetPercentage = affectionScore / 1000f
     }
 
     val mockPersonas = listOf(

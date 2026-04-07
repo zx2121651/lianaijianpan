@@ -29,6 +29,8 @@ import com.lovekey.ime.ui.LovekeyKeyboard
 import com.lovekey.ime.theme.ThemePresets
 import com.lovekey.ime.theme.PersonaTheme
 import kotlinx.coroutines.launch
+import androidx.datastore.preferences.core.edit
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,7 +68,17 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     private val serviceJob = kotlinx.coroutines.Job()
     private val serviceScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main + serviceJob)
 
-    private val sessionController = InputSessionController(engineAdapter, commitPolicy)
+        private val sessionController by lazy {
+        InputSessionController(engineAdapter, commitPolicy) { delta ->
+            serviceScope.launch {
+                dataStore.edit { prefs ->
+                                        val current: Int = prefs[SettingsKeys.AFFECTION_SCORE] ?: 150
+                    // Score clamped between 0 and 1000
+                    prefs[SettingsKeys.AFFECTION_SCORE] = (current + delta).coerceIn(0, 1000)
+                }
+            }
+        }
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {

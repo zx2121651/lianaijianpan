@@ -8,7 +8,8 @@ import com.lovekey.ime.ui.KeyboardMode
 
 class InputSessionController(
     private val engineAdapter: CandidateEngineAdapter,
-    private val commitPolicy: CommitPolicy
+    private val commitPolicy: CommitPolicy,
+    private val onAffectionChange: (Int) -> Unit = {}
 ) {
     // A scope bound to the lifetime of the IMEService, or cancelled externally
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -125,6 +126,8 @@ class InputSessionController(
                 engineAdapter.chooseCandidate(candidate)
             }
         }
+
+        onAffectionChange(2) // Positive reinforcement for using its suggestion
     }
 
     fun handleSyllableSelected(syllable: String) {
