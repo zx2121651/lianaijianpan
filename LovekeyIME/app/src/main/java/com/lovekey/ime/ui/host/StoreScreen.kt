@@ -11,6 +11,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,11 +25,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
-data class PersonaCard(val id: Int, val title: String, val author: String, val price: String, val color1: Color, val color2: Color)
+data class PersonaCard(val id: String, val title: String, val author: String, val price: String, val color1: Color, val color2: Color)
 
 @Composable
 fun StoreScreen(context: Context) {
     var targetPercentage by remember { mutableStateOf(0f) }
+
+    val scope = rememberCoroutineScope()
+    val currentPersonaId by context.dataStore.data.map { it[SettingsKeys.PERSONA_ID] ?: "theme_girl" }.collectAsState(initial = "theme_girl")
+
 
     val animatedPercentage by animateFloatAsState(
         targetValue = targetPercentage,
@@ -38,12 +46,12 @@ fun StoreScreen(context: Context) {
     }
 
     val mockPersonas = listOf(
-        PersonaCard(1, "初夏限定：元气学妹", "Lovekey 官方", "免费", Color(0xFFFFB6C1), Color(0xFFFF4081)),
-        PersonaCard(2, "赛博朋克：机械指令", "GeekStudio", "VIP", Color(0xFF00FF87), Color(0xFF60EFFF)),
-        PersonaCard(3, "水墨丹青：长安时辰", "国风工作室", "免费", Color(0xFFCFD9DF), Color(0xFFE2EBF0)),
-        PersonaCard(4, "暗夜极简：黑客帝国", "Lovekey 官方", "免费", Color(0xFF2C3E50), Color(0xFF000000)),
-        PersonaCard(5, "星空梦境：魔法少女", "二次元部", "VIP", Color(0xFF8EC5FC), Color(0xFFE0C3FC)),
-        PersonaCard(6, "青轴手感：电竞RGB", "Razer Fan", "免费", Color(0xFFFF9A9E), Color(0xFFFECFEF))
+        PersonaCard("theme_girl", "初夏限定：元气学妹", "Lovekey 官方", "免费", Color(0xFFFFB6C1), Color(0xFFFF4081)),
+        PersonaCard("theme_cyber", "赛博朋克：机械指令", "GeekStudio", "VIP", Color(0xFF00FF87), Color(0xFF60EFFF)),
+        PersonaCard("theme_ink", "水墨丹青：长安时辰", "国风工作室", "免费", Color(0xFFCFD9DF), Color(0xFFE2EBF0)),
+        PersonaCard("theme_dark", "暗夜极简：黑客帝国", "Lovekey 官方", "免费", Color(0xFF2C3E50), Color(0xFF000000)),
+        PersonaCard("theme_magic", "星空梦境：魔法少女", "二次元部", "VIP", Color(0xFF8EC5FC), Color(0xFFE0C3FC)),
+        PersonaCard("theme_rgb", "青轴手感：电竞RGB", "Razer Fan", "免费", Color(0xFFFF9A9E), Color(0xFFFECFEF))
     )
 
     Column(
@@ -107,7 +115,7 @@ fun StoreScreen(context: Context) {
             verticalItemSpacing = 12.dp
         ) {
             items(mockPersonas) { persona ->
-                PersonaCardView(persona)
+                PersonaCardView(persona, currentPersonaId, context)
             }
         }
     }
@@ -131,7 +139,9 @@ fun CategoryIcon(label: String, color: Color) {
 }
 
 @Composable
-fun PersonaCardView(persona: PersonaCard) {
+fun PersonaCardView(persona: PersonaCard, currentPersonaId: String, context: Context) {
+    val scope = rememberCoroutineScope()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -143,7 +153,7 @@ fun PersonaCardView(persona: PersonaCard) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (persona.id % 2 == 0) 180.dp else 140.dp) // Staggered height
+                    .height(if (persona.id.length % 2 == 0) 180.dp else 140.dp) // Staggered height
                     .background(Brush.linearGradient(listOf(persona.color1, persona.color2)))
             ) {
                 // Price Tag
@@ -164,15 +174,29 @@ fun PersonaCardView(persona: PersonaCard) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("by ${persona.author}", fontSize = 12.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(12.dp))
+                val isApplied = currentPersonaId == persona.id
                 Button(
-                    onClick = { /* TODO: Apply theme */ },
+                    onClick = {
+                        scope.launch {
+                            context.dataStore.edit { prefs ->
+                                prefs[SettingsKeys.PERSONA_ID] = persona.id
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(36.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFCE4EC)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isApplied) Color(0xFFE91E63) else Color(0xFFFCE4EC)
+                    ),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("应用", color = Color(0xFFD81B60), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isApplied) "使用中" else "应用",
+                        color = if (isApplied) Color.White else Color(0xFFD81B60),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

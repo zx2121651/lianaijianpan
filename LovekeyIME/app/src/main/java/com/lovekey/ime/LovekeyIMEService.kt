@@ -26,6 +26,8 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import com.android.inputmethod.pinyin.PinyinDecoderService
 import com.lovekey.ime.ui.LovekeyKeyboard
+import com.lovekey.ime.theme.ThemePresets
+import com.lovekey.ime.theme.PersonaTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +55,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     private var pinyinService: PinyinDecoderService? = null
     private var isBound = false
     private val editorInfoState = mutableStateOf<EditorInfo?>(null)
+    private val personaThemeState = mutableStateOf(ThemePresets.ThemeGirl)
 
     private val engineAdapter = CandidateEngineAdapter()
 
@@ -93,7 +96,10 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 engineAdapter.fuzzyNL = prefs[SettingsKeys.FUZZY_N_L] ?: false
                 engineAdapter.fuzzyEnEng = prefs[SettingsKeys.FUZZY_EN_ENG] ?: false
                 engineAdapter.fuzzyInIng = prefs[SettingsKeys.FUZZY_IN_ING] ?: false
-                engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
+                                engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
+
+                val personaId = prefs[SettingsKeys.PERSONA_ID] ?: "theme_girl"
+                personaThemeState.value = ThemePresets.getThemeById(personaId)
             }
         }
 
@@ -178,6 +184,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 val previousMode by sessionController.previousMode.collectAsState()
 
 
+                val theme = personaThemeState.value
                 LovekeyKeyboard(
                     currentPinyinText = displayPinyinText,
                     candidateList = candidateList,
@@ -186,9 +193,16 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     previousModeExternal = previousMode,
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
+                    boardColor = theme.boardColor,
+                    keyColor = theme.keyColor,
+                    functionKeyColor = theme.functionKeyColor,
+                    accentColor = theme.accentColor,
+                    textColor = theme.textColor,
+                    secondaryTextColor = theme.secondaryTextColor,
+                    unselectedTabColor = theme.unselectedTabColor,
                     onEnglishModeChanged = { sessionController.setEnglishMode(it) },
                     onKeyboardModeChanged = { sessionController.setKeyboardMode(it) },
-                                        onKeyPress = { key -> sessionController.handleKeyPress(key) },
+                    onKeyPress = { key -> sessionController.handleKeyPress(key) },
                     onCandidateSelected = { candidate -> sessionController.handleCandidateSelected(candidate) },
                     onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) },
                     onCursorMove = { offset -> sessionController.handleCursorMove(offset) }
