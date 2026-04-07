@@ -40,6 +40,13 @@ fun LovekeyKeyboard(
     previousModeExternal: KeyboardMode = KeyboardMode.QWERTY,
     isEnglishModeExternal: Boolean = false,
     enterKeyText: String = "发送",
+    boardColor: Color = Color(0xFFF3EBEB),
+    keyColor: Color = Color.White,
+    functionKeyColor: Color = Color(0xFFE4DDDD),
+    accentColor: Color = Color(0xFFE2B4B8),
+    textColor: Color = Color(0xFF4A4443),
+    secondaryTextColor: Color = Color(0xFF988F8E),
+    unselectedTabColor: Color = Color(0xFFD6D1D1),
     onKeyPress: (String) -> Unit,
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
@@ -47,13 +54,6 @@ fun LovekeyKeyboard(
     onKeyboardModeChanged: (KeyboardMode) -> Unit = {},
     onCursorMove: (Int) -> Unit = {}
 ) {
-    val boardColor = Color(0xFFFDFBFB)
-    val keyColor = Color(0xFFFFFFFF)
-    val functionKeyColor = Color(0xFFF3EBEB)
-    val accentColor = Color(0xFFE2B4B8)
-    val textColor = Color(0xFF4A4443)
-    val secondaryTextColor = Color(0xFF988F8E)
-    val unselectedTabColor = Color(0xFFD6D1D1)
 
     val keyCornerRadius = 10.dp
 
