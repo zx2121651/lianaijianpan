@@ -5,5 +5,5 @@ enum class ShiftState {
 }
 
 enum class KeyboardMode {
-    QWERTY, T9, HANDWRITING, SYMBOL, CLIPBOARD
+    QWERTY, T9, HANDWRITING, SYMBOL, CLIPBOARD, PHRASES
 }

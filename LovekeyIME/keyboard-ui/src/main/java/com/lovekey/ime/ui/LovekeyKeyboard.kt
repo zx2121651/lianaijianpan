@@ -54,9 +54,11 @@ fun LovekeyKeyboard(
     onKeyboardModeChanged: (KeyboardMode) -> Unit = {},
     onCursorMove: (Int) -> Unit = {},
     clipboardHistory: List<String> = emptyList(),
+    phrasesList: List<String> = emptyList(),
     onPasteClip: (String) -> Unit = {},
     onDeleteClip: (String) -> Unit = {},
-    onClearClipboard: () -> Unit = {}
+    onClearClipboard: () -> Unit = {},
+    onSendPhrase: (String) -> Unit = {}
 ) {
 
     val keyCornerRadius = 10.dp
@@ -177,6 +179,13 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
                             fontSize = 18.sp,
                             modifier = Modifier
                                 .clickable { onKeyboardModeChanged(KeyboardMode.CLIPBOARD) }
+                                .padding(12.dp)
+                        )
+                        Text(
+                            text = "💬",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.PHRASES) }
                                 .padding(12.dp)
                         )
                         Text(
@@ -318,6 +327,19 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
                 },
                 onDelete = onDeleteClip,
                 onClearAll = onClearClipboard,
+                onClose = { onKeyboardModeChanged(previousModeExternal) }
+            )
+            KeyboardMode.PHRASES -> PhrasesKeyboard(
+                phrasesList = phrasesList,
+                boardColor = boardColor,
+                keyColor = keyColor,
+                textColor = textColor,
+                secondaryTextColor = secondaryTextColor,
+                accentColor = accentColor,
+                onSendPhrase = {
+                    onSendPhrase(it)
+                    onKeyboardModeChanged(previousModeExternal)
+                },
                 onClose = { onKeyboardModeChanged(previousModeExternal) }
             )
         } // End of when

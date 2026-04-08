@@ -31,7 +31,8 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
-                val CLIPBOARD_HISTORY = stringPreferencesKey("clipboard_history")
+                    val SHORTCUT_PHRASES = stringPreferencesKey("shortcut_phrases")
+    val CLIPBOARD_HISTORY = stringPreferencesKey("clipboard_history")
     val AFFECTION_SCORE = intPreferencesKey("affection_score")
     val PERSONA_ID = stringPreferencesKey("persona_id")
     val ENABLE_TYPO_CORRECTION = booleanPreferencesKey("enable_typo_correction")

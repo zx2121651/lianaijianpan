@@ -65,7 +65,10 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     private val editorInfoState = mutableStateOf<EditorInfo?>(null)
     private val personaThemeState = mutableStateOf(ThemePresets.ThemeGirl)
 
-        private val _clipboardHistory = MutableStateFlow<List<String>>(emptyList())
+        private val _phrasesList = MutableStateFlow<List<String>>(emptyList())
+    val phrasesList = _phrasesList.asStateFlow()
+
+    private val _clipboardHistory = MutableStateFlow<List<String>>(emptyList())
     val clipboardHistory = _clipboardHistory.asStateFlow()
 
     private var clipboardManager: ClipboardManager? = null
@@ -183,6 +186,18 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 engineAdapter.fuzzyInIng = prefs[SettingsKeys.FUZZY_IN_ING] ?: false
                                 engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
 
+                                val phrasesJsonStr = prefs[SettingsKeys.SHORTCUT_PHRASES] ?: "[]"
+                try {
+                    val jsonArray = JSONArray(phrasesJsonStr)
+                    val list = mutableListOf<String>()
+                    for (i in 0 until jsonArray.length()) {
+                        list.add(jsonArray.getString(i))
+                    }
+                    _phrasesList.value = list
+                } catch (e: Exception) {
+                    _phrasesList.value = listOf("你好，我正在忙，稍后回复你哦~", "我的邮箱是：test@lovekey.com", "马上到！")
+                }
+
                 val historyJsonStr = prefs[SettingsKeys.CLIPBOARD_HISTORY] ?: "[]"
                 try {
                     val jsonArray = JSONArray(historyJsonStr)
@@ -280,6 +295,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 val currentMode by sessionController.currentMode.collectAsState()
                 val previousMode by sessionController.previousMode.collectAsState()
                 val currentClipboardHistory by clipboardHistory.collectAsState()
+                val currentPhrasesList by phrasesList.collectAsState()
 
 
                 val theme = personaThemeState.value
@@ -305,9 +321,11 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) },
                     onCursorMove = { offset -> sessionController.handleCursorMove(offset) },
                     clipboardHistory = currentClipboardHistory,
+                    phrasesList = currentPhrasesList,
                     onPasteClip = { text -> commitPolicy.commitText(text) },
                     onDeleteClip = { text -> removeClip(text) },
-                    onClearClipboard = { clearClipboard() }
+                    onClearClipboard = { clearClipboard() },
+                    onSendPhrase = { text -> commitPolicy.commitText(text) }
                 )
             }
         }

@@ -75,8 +75,7 @@ fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit) {
                 StoreScreen(context)
             }
             composable(BottomNavItem.Phrases.route) {
-                // Placeholder
-                Text("语料开发中...", modifier = Modifier.padding(16.dp))
+                PhrasesScreen(context)
             }
             composable(BottomNavItem.Dictionary.route) {
                 // Placeholder
