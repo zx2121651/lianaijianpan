@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -28,7 +29,7 @@ import kotlinx.coroutines.delay
 data class PersonaCard(val id: String, val title: String, val author: String, val price: String, val color1: Color, val color2: Color)
 
 @Composable
-fun StoreScreen(context: Context) {
+fun StoreScreen(context: Context, onNavigateToDiy: () -> Unit = {}) {
     var targetPercentage by remember { mutableStateOf(0f) }
 
 val scope = rememberCoroutineScope()
@@ -104,6 +105,36 @@ LaunchedEffect(affectionScore) {
             CategoryIcon("极简", Color(0xFFC8E6C9))
             CategoryIcon("电竞", Color(0xFFFFF9C4))
             CategoryIcon("盲盒", Color(0xFFE1BEE7))
+        }
+
+
+        // DIY Button
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clickable { onNavigateToDiy() },
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFCE4EC)),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(40.dp).background(Color(0xFFE91E63), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text("自定义键盘相册", fontWeight = FontWeight.Bold, color = Color(0xFFD81B60), fontSize = 16.sp)
+                    Text("上传自己的照片，DIY 专属皮肤", color = Color(0xFFC2185B), fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Text("制作 >", color = Color(0xFFD81B60), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
         }
 
         // Staggered Grid (瀑布流)

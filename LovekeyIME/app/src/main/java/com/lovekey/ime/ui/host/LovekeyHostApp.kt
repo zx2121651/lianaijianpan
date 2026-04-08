@@ -35,7 +35,7 @@ val items = listOf(
 )
 
 @Composable
-fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit) {
+fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit, onNavigateToDiy: () -> Unit) {
     val navController = rememberNavController()
     Scaffold(
         bottomBar = {
@@ -72,7 +72,7 @@ fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavItem.Store.route) {
-                StoreScreen(context)
+                StoreScreen(context, onNavigateToDiy)
             }
             composable(BottomNavItem.Phrases.route) {
                 PhrasesScreen(context)
@@ -108,12 +108,20 @@ fun LovekeyHostApp(context: Context) {
         composable("main") {
             MainScreen(
                 context = context,
-                onNavigateToSmartInput = { rootNavController.navigate("smart_input") }
+                onNavigateToSmartInput = { rootNavController.navigate("smart_input") },
+                onNavigateToDiy = { rootNavController.navigate("diy_theme") }
             )
         }
 
         composable("smart_input") {
             SmartInputScreen(
+                context = context,
+                onBack = { rootNavController.popBackStack() }
+            )
+        }
+
+        composable("diy_theme") {
+            DiyThemeScreen(
                 context = context,
                 onBack = { rootNavController.popBackStack() }
             )

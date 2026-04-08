@@ -1,5 +1,9 @@
 package com.lovekey.ime.ui
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,6 +51,8 @@ fun LovekeyKeyboard(
     textColor: Color = Color(0xFF4A4443),
     secondaryTextColor: Color = Color(0xFF988F8E),
     unselectedTabColor: Color = Color(0xFFD6D1D1),
+    backgroundImagePath: String? = null,
+    keyAlpha: Float = 1.0f,
     onKeyPress: (String) -> Unit,
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
@@ -66,7 +72,12 @@ fun LovekeyKeyboard(
     var isEnglishMode by remember { mutableStateOf(isEnglishModeExternal) }
     LaunchedEffect(isEnglishModeExternal) { isEnglishMode = isEnglishModeExternal }
 
+
     val view = LocalView.current
+
+    val appliedKeyColor = keyColor.copy(alpha = keyAlpha)
+    val appliedFunctionKeyColor = functionKeyColor.copy(alpha = keyAlpha)
+
     var isSyllableBarExpanded by remember { mutableStateOf(false) }
     var isCandidatePanelExpanded by remember { mutableStateOf(false) }
 
@@ -78,18 +89,31 @@ fun LovekeyKeyboard(
     }
 
 
+
     Box(modifier = Modifier.fillMaxWidth()) {
+        if (backgroundImagePath != null) {
+            val bitmap = remember(backgroundImagePath) { BitmapFactory.decodeFile(backgroundImagePath)?.asImageBitmap() }
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Custom Background",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(boardColor)
+                .background(if (backgroundImagePath != null) Color.Transparent else boardColor)
                 .padding(bottom = 12.dp)
         ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .background(Color.White)
+                .background(if (backgroundImagePath != null) appliedFunctionKeyColor else Color.White)
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -247,8 +271,8 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
                     textColor = textColor,
-                    keyColor = keyColor,
-                    functionKeyColor = functionKeyColor,
+                    keyColor = appliedKeyColor,
+                    functionKeyColor = appliedFunctionKeyColor,
                     accentColor = accentColor,
                     keyCornerRadius = keyCornerRadius,
                     onKeyPress = onKeyPress,
@@ -274,8 +298,8 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
                 enterKeyText = enterKeyText,
                 textColor = textColor,
                 secondaryTextColor = secondaryTextColor,
-                keyColor = keyColor,
-                functionKeyColor = functionKeyColor,
+                keyColor = appliedKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress,
@@ -288,7 +312,7 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
             KeyboardMode.HANDWRITING -> HandwritingKeyboard(
                 enterKeyText = enterKeyText,
                 textColor = textColor,
-                functionKeyColor = functionKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
@@ -308,8 +332,8 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
                     isEnglishMode = it
                     onEnglishModeChanged(it)
                 },
-                keyColor = keyColor,
-                functionKeyColor = functionKeyColor,
+                keyColor = appliedKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
@@ -317,7 +341,7 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
             KeyboardMode.CLIPBOARD -> ClipboardKeyboard(
                 clipboardHistory = clipboardHistory,
                 boardColor = boardColor,
-                keyColor = keyColor,
+                keyColor = appliedKeyColor,
                 textColor = textColor,
                 secondaryTextColor = secondaryTextColor,
                 accentColor = accentColor,
@@ -332,7 +356,7 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
             KeyboardMode.PHRASES -> PhrasesKeyboard(
                 phrasesList = phrasesList,
                 boardColor = boardColor,
-                keyColor = keyColor,
+                keyColor = appliedKeyColor,
                 textColor = textColor,
                 secondaryTextColor = secondaryTextColor,
                 accentColor = accentColor,

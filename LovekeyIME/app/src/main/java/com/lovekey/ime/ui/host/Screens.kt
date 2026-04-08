@@ -21,6 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -31,7 +32,8 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 object SettingsKeys {
-                    val SHORTCUT_PHRASES = stringPreferencesKey("shortcut_phrases")
+                        val CUSTOM_KEY_ALPHA = floatPreferencesKey("custom_key_alpha")
+    val SHORTCUT_PHRASES = stringPreferencesKey("shortcut_phrases")
     val CLIPBOARD_HISTORY = stringPreferencesKey("clipboard_history")
     val AFFECTION_SCORE = intPreferencesKey("affection_score")
     val PERSONA_ID = stringPreferencesKey("persona_id")

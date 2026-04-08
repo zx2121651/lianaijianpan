@@ -11,7 +11,9 @@ data class PersonaTheme(
     val accentColor: Color,
     val textColor: Color,
     val secondaryTextColor: Color,
-    val unselectedTabColor: Color
+    val unselectedTabColor: Color,
+    val backgroundImagePath: String? = null,
+    val keyAlpha: Float = 1.0f
 )
 
 object ThemePresets {
@@ -51,11 +53,26 @@ object ThemePresets {
         unselectedTabColor = Color(0xFFBDBDBD)
     )
 
+    val ThemeCustom = PersonaTheme(
+        id = "theme_custom",
+        name = "自定义装扮",
+        boardColor = Color(0x66000000), // Semi-transparent black fallback
+        keyColor = Color(0xFFFFFFFF),
+        functionKeyColor = Color(0xFFEAEAEA),
+        accentColor = Color(0xFFE91E63),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFDDDDDD),
+        unselectedTabColor = Color(0xFFBDBDBD),
+        backgroundImagePath = null,
+        keyAlpha = 0.7f
+    )
+
     fun getThemeById(id: String): PersonaTheme {
         return when (id) {
             "theme_girl" -> ThemeGirl
             "theme_cyber" -> ThemeCyber
             "theme_ink" -> ThemeInk
+            "theme_custom" -> ThemeCustom
             else -> ThemeGirl
         }
     }

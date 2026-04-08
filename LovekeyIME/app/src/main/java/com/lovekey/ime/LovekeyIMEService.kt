@@ -210,8 +210,21 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     _clipboardHistory.value = emptyList()
                 }
 
+
                 val personaId = prefs[SettingsKeys.PERSONA_ID] ?: "theme_girl"
-                personaThemeState.value = ThemePresets.getThemeById(personaId)
+                val baseTheme = ThemePresets.getThemeById(personaId)
+                if (personaId == "theme_custom") {
+                    val alpha = prefs[SettingsKeys.CUSTOM_KEY_ALPHA] ?: 0.7f
+                    val bgFile = java.io.File(filesDir, "custom_bg.jpg")
+                    val bgPath = if (bgFile.exists()) bgFile.absolutePath else null
+                    personaThemeState.value = baseTheme.copy(
+                        keyAlpha = alpha,
+                        backgroundImagePath = bgPath
+                    )
+                } else {
+                    personaThemeState.value = baseTheme
+                }
+
             }
         }
 
@@ -314,6 +327,8 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     textColor = theme.textColor,
                     secondaryTextColor = theme.secondaryTextColor,
                     unselectedTabColor = theme.unselectedTabColor,
+                    backgroundImagePath = theme.backgroundImagePath,
+                    keyAlpha = theme.keyAlpha,
                     onEnglishModeChanged = { sessionController.setEnglishMode(it) },
                     onKeyboardModeChanged = { sessionController.setKeyboardMode(it) },
                     onKeyPress = { key -> sessionController.handleKeyPress(key) },
