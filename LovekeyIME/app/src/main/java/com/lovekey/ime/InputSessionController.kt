@@ -142,7 +142,7 @@ class InputSessionController(
 
 
     fun setKeyboardMode(mode: KeyboardMode) {
-        if (mode != KeyboardMode.SYMBOL && mode != KeyboardMode.HANDWRITING && !_isEnglishMode.value) {
+        if (mode != KeyboardMode.SYMBOL && mode != KeyboardMode.HANDWRITING && mode != KeyboardMode.CLIPBOARD && !_isEnglishMode.value) {
             _previousMode.value = _currentMode.value
         }
         _currentMode.value = mode

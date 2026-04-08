@@ -2,6 +2,12 @@ package com.lovekey.ime
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.ClipboardManager
+import android.content.ClipData
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+
 import android.content.Intent
 import android.content.ServiceConnection
 import android.inputmethodservice.InputMethodService
@@ -59,6 +65,71 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     private val editorInfoState = mutableStateOf<EditorInfo?>(null)
     private val personaThemeState = mutableStateOf(ThemePresets.ThemeGirl)
 
+        private val _clipboardHistory = MutableStateFlow<List<String>>(emptyList())
+    val clipboardHistory = _clipboardHistory.asStateFlow()
+
+    private var clipboardManager: ClipboardManager? = null
+
+    private val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener {
+        val clipData = clipboardManager?.primaryClip
+        if (clipData != null && clipData.itemCount > 0) {
+            val text = clipData.getItemAt(0).text?.toString()
+            if (!text.isNullOrBlank()) {
+                val truncatedText = if (text.length > 5000) text.substring(0, 5000) + "..." else text
+                serviceScope.launch {
+                    dataStore.edit { prefs ->
+                        val currentJsonStr = prefs[SettingsKeys.CLIPBOARD_HISTORY] ?: "[]"
+                        val currentList = try {
+                            val jsonArray = JSONArray(currentJsonStr)
+                            val list = mutableListOf<String>()
+                            for (i in 0 until jsonArray.length()) {
+                                list.add(jsonArray.getString(i))
+                            }
+                            list
+                        } catch (e: Exception) { mutableListOf<String>() }
+
+                        // Remove if exists to push to front
+                        currentList.remove(truncatedText)
+                        currentList.add(0, truncatedText)
+
+                        // Keep max 20 items
+                        val newList = currentList.take(20)
+                        prefs[SettingsKeys.CLIPBOARD_HISTORY] = JSONArray(newList).toString()
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    private fun removeClip(text: String) {
+        serviceScope.launch {
+            dataStore.edit { prefs ->
+                val currentJsonStr = prefs[SettingsKeys.CLIPBOARD_HISTORY] ?: "[]"
+                val currentList = try {
+                    val jsonArray = JSONArray(currentJsonStr)
+                    val list = mutableListOf<String>()
+                    for (i in 0 until jsonArray.length()) {
+                        list.add(jsonArray.getString(i))
+                    }
+                    list
+                } catch (e: Exception) { mutableListOf<String>() }
+
+                currentList.remove(text)
+                prefs[SettingsKeys.CLIPBOARD_HISTORY] = JSONArray(currentList).toString()
+            }
+        }
+    }
+
+    private fun clearClipboard() {
+        serviceScope.launch {
+            dataStore.edit { prefs ->
+                prefs[SettingsKeys.CLIPBOARD_HISTORY] = "[]"
+            }
+        }
+    }
+
     private val engineAdapter = CandidateEngineAdapter()
 
 
@@ -96,6 +167,8 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
     }
     override fun onCreate() {
         super.onCreate()
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboardManager?.addPrimaryClipChangedListener(clipboardListener)
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
 
@@ -109,6 +182,18 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 engineAdapter.fuzzyEnEng = prefs[SettingsKeys.FUZZY_EN_ENG] ?: false
                 engineAdapter.fuzzyInIng = prefs[SettingsKeys.FUZZY_IN_ING] ?: false
                                 engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
+
+                val historyJsonStr = prefs[SettingsKeys.CLIPBOARD_HISTORY] ?: "[]"
+                try {
+                    val jsonArray = JSONArray(historyJsonStr)
+                    val list = mutableListOf<String>()
+                    for (i in 0 until jsonArray.length()) {
+                        list.add(jsonArray.getString(i))
+                    }
+                    _clipboardHistory.value = list
+                } catch (e: Exception) {
+                    _clipboardHistory.value = emptyList()
+                }
 
                 val personaId = prefs[SettingsKeys.PERSONA_ID] ?: "theme_girl"
                 personaThemeState.value = ThemePresets.getThemeById(personaId)
@@ -194,6 +279,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 val isEnglishMode by sessionController.isEnglishMode.collectAsState()
                 val currentMode by sessionController.currentMode.collectAsState()
                 val previousMode by sessionController.previousMode.collectAsState()
+                val currentClipboardHistory by clipboardHistory.collectAsState()
 
 
                 val theme = personaThemeState.value
@@ -217,7 +303,11 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     onKeyPress = { key -> sessionController.handleKeyPress(key) },
                     onCandidateSelected = { candidate -> sessionController.handleCandidateSelected(candidate) },
                     onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) },
-                    onCursorMove = { offset -> sessionController.handleCursorMove(offset) }
+                    onCursorMove = { offset -> sessionController.handleCursorMove(offset) },
+                    clipboardHistory = currentClipboardHistory,
+                    onPasteClip = { text -> commitPolicy.commitText(text) },
+                    onDeleteClip = { text -> removeClip(text) },
+                    onClearClipboard = { clearClipboard() }
                 )
             }
         }

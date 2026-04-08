@@ -52,7 +52,11 @@ fun LovekeyKeyboard(
     onSyllableSelected: (String) -> Unit = {},
     onEnglishModeChanged: (Boolean) -> Unit = {},
     onKeyboardModeChanged: (KeyboardMode) -> Unit = {},
-    onCursorMove: (Int) -> Unit = {}
+    onCursorMove: (Int) -> Unit = {},
+    clipboardHistory: List<String> = emptyList(),
+    onPasteClip: (String) -> Unit = {},
+    onDeleteClip: (String) -> Unit = {},
+    onClearClipboard: () -> Unit = {}
 ) {
 
     val keyCornerRadius = 10.dp
@@ -163,39 +167,56 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "全拼",
-                        color = if (currentModeExternal == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.QWERTY) }
-                            .padding(8.dp)
-                    )
-                    Text(
-                        text = "九键",
-                        color = if (currentModeExternal == KeyboardMode.T9) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.T9) }
-                            .padding(8.dp)
-                    )
-                    Text(
-                        text = "手写",
-                        color = if (currentModeExternal == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
-                            .padding(8.dp)
-                    )
+                    // Left side tools
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "📋",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.CLIPBOARD) }
+                                .padding(12.dp)
+                        )
+                        Text(
+                            text = "⚙️",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { /* TODO: Open Settings Intent */ }
+                                .padding(12.dp)
+                        )
+                    }
+                    // Right side modes
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "全拼",
+                            color = if (currentModeExternal == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.QWERTY) }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = "九键",
+                            color = if (currentModeExternal == KeyboardMode.T9) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.T9) }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = "手写",
+                            color = if (currentModeExternal == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
+                                .padding(8.dp)
+                        )
+                    }
                 }
             }
         }
@@ -284,9 +305,23 @@ onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
             )
-        }
-
-        } // End of Column
+            KeyboardMode.CLIPBOARD -> ClipboardKeyboard(
+                clipboardHistory = clipboardHistory,
+                boardColor = boardColor,
+                keyColor = keyColor,
+                textColor = textColor,
+                secondaryTextColor = secondaryTextColor,
+                accentColor = accentColor,
+                onPaste = {
+                    onPasteClip(it)
+                    onKeyboardModeChanged(previousModeExternal)
+                },
+                onDelete = onDeleteClip,
+                onClearAll = onClearClipboard,
+                onClose = { onKeyboardModeChanged(previousModeExternal) }
+            )
+        } // End of when
+    } // End of Column
 
         if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
             Box(
