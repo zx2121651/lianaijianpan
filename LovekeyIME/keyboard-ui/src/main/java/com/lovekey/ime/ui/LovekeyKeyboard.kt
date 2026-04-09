@@ -54,6 +54,7 @@ fun LovekeyKeyboard(
     backgroundImagePath: String? = null,
     keyAlpha: Float = 1.0f,
     onKeyPress: (String) -> Unit,
+
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
     onEnglishModeChanged: (Boolean) -> Unit = {},
@@ -118,8 +119,9 @@ fun LovekeyKeyboard(
                 onSyllableSelected = onSyllableSelected,
                 accentColor = accentColor,
                 textColor = textColor,
-                view = view
-            )
+                view = view,
+)
+
         }
 
         Row(

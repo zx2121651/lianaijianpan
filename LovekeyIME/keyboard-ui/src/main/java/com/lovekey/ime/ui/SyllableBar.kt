@@ -33,7 +33,8 @@ fun SyllableBar(
     onSyllableSelected: (String) -> Unit,
     accentColor: Color,
     textColor: Color,
-    view: View
+    view: View,
+    hapticsEnabled: Boolean = true
 ) {
     if (currentPinyinText.isEmpty()) return
 

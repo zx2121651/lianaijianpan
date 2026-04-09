@@ -186,6 +186,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                 engineAdapter.fuzzyInIng = prefs[SettingsKeys.FUZZY_IN_ING] ?: false
                                 engineAdapter.fuzzyAnAng = prefs[SettingsKeys.FUZZY_AN_ANG] ?: false
 
+
                                 val phrasesJsonStr = prefs[SettingsKeys.SHORTCUT_PHRASES] ?: "[]"
                 try {
                     val jsonArray = JSONArray(phrasesJsonStr)
@@ -332,6 +333,7 @@ class LovekeyIMEService : InputMethodService(), LifecycleOwner, SavedStateRegist
                     onEnglishModeChanged = { sessionController.setEnglishMode(it) },
                     onKeyboardModeChanged = { sessionController.setKeyboardMode(it) },
                     onKeyPress = { key -> sessionController.handleKeyPress(key) },
+
                     onCandidateSelected = { candidate -> sessionController.handleCandidateSelected(candidate) },
                     onSyllableSelected = { syllable -> sessionController.handleSyllableSelected(syllable) },
                     onCursorMove = { offset -> sessionController.handleCursorMove(offset) },

@@ -45,6 +45,7 @@ object SettingsKeys {
     val FUZZY_EN_ENG = booleanPreferencesKey("fuzzy_en_eng")
     val FUZZY_IN_ING = booleanPreferencesKey("fuzzy_in_ing")
     val FUZZY_AN_ANG = booleanPreferencesKey("fuzzy_an_ang")
+    val ENABLE_HAPTICS = booleanPreferencesKey("enable_haptics")
 }
 
 

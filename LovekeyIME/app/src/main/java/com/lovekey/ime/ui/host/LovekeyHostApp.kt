@@ -21,7 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
 sealed class BottomNavItem(val route: String, val label: String, val icon: ImageVector) {
-    object Store : BottomNavItem("store", "人设", Icons.Filled.ColorLens)
+    object Store : BottomNavItem("store", "首页", Icons.Filled.ColorLens)
     object Phrases : BottomNavItem("phrases", "语料", Icons.Filled.Translate)
     object Dictionary : BottomNavItem("dictionary", "词库", Icons.Filled.LibraryBooks)
     object Profile : BottomNavItem("profile", "我的", Icons.Filled.Settings)
@@ -72,7 +72,7 @@ fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit, onNavigateT
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavItem.Store.route) {
-                StoreScreen(context, onNavigateToDiy)
+                HomeScreen(context)
             }
             composable(BottomNavItem.Phrases.route) {
                 PhrasesScreen(context)
