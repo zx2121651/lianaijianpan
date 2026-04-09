@@ -33,8 +33,10 @@ fun StoreScreen(context: Context, onNavigateToDiy: () -> Unit = {}) {
     var targetPercentage by remember { mutableStateOf(0f) }
 
 val scope = rememberCoroutineScope()
-    val currentPersonaId by context.dataStore.data.map { it[SettingsKeys.PERSONA_ID] ?: "theme_girl" }.collectAsState(initial = "theme_girl")
-    val affectionScore by context.dataStore.data.map { it[SettingsKeys.AFFECTION_SCORE] ?: 150 }.collectAsState(initial = 150)
+    val personaFlow = remember { context.dataStore.data.map { it[SettingsKeys.PERSONA_ID] ?: "theme_girl" } }
+    val currentPersonaId by personaFlow.collectAsState(initial = "theme_girl")
+    val scoreFlow = remember { context.dataStore.data.map { it[SettingsKeys.AFFECTION_SCORE] ?: 150 } }
+    val affectionScore by scoreFlow.collectAsState(initial = 150)
 
 
     val animatedPercentage by animateFloatAsState(

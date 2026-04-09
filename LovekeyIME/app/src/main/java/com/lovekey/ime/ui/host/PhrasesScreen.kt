@@ -27,9 +27,8 @@ fun PhrasesScreen(context: Context) {
     val scope = rememberCoroutineScope()
 
     // Retrieve phrases list from DataStore
-    val phrasesJson by context.dataStore.data.map {
-        it[SettingsKeys.SHORTCUT_PHRASES] ?: "[\"你好，我正在忙，稍后回复你哦~\", \"我的邮箱是：test@lovekey.com\", \"马上到！\"]"
-    }.collectAsState(initial = "[]")
+    val phrasesFlow = remember(context) { context.dataStore.data.map { it[SettingsKeys.SHORTCUT_PHRASES] ?: "[\"你好，我正在忙，稍后回复你哦~\", \"我的邮箱是：test@lovekey.com\", \"马上到！\"]" } }
+    val phrasesJson by phrasesFlow.collectAsState(initial = "[]")
 
     val phrasesList = remember(phrasesJson) {
         try {

@@ -135,7 +135,9 @@ class InputSessionController(
         // Cancel any pending search jobs
         searchJob?.cancel()
         searchJob = scope.launch {
-            val candidates = engineAdapter.searchBySyllable(syllable)
+            // When user explicitly selects a different T9 permutation or syllable from the bar,
+            // we do a full Pinyin search for that specific string to populate candidates.
+            val (_, candidates, _) = engineAdapter.searchPinyin(syllable, isT9 = false)
             _candidateList.value = candidates
         }
     }

@@ -109,6 +109,19 @@ fun LovekeyKeyboard(
                 .background(if (backgroundImagePath != null) Color.Transparent else boardColor)
                 .padding(bottom = 12.dp)
         ) {
+        if (currentPinyinText.isNotEmpty()) {
+            SyllableBar(
+                currentPinyinText = currentPinyinText,
+                t9PinyinCombinations = t9PinyinCombinations,
+                isExpanded = isSyllableBarExpanded,
+                onExpandedChange = { isSyllableBarExpanded = it },
+                onSyllableSelected = onSyllableSelected,
+                accentColor = accentColor,
+                textColor = textColor,
+                view = view
+            )
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,24 +131,6 @@ fun LovekeyKeyboard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (currentPinyinText.isNotEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = currentPinyinText,
-                        color = accentColor,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .width(1.dp)
-                        .background(Color(0xFFF0EBEA))
-                )
 
                 LazyRow(
                     modifier = Modifier
@@ -159,21 +154,7 @@ onCandidateSelected(candidate) }
                     }
                 }
 
-                if (t9PinyinCombinations.size > 1) {
-                    Box(
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = !isSyllableBarExpanded
-                            }
-                            .padding(start = 8.dp)
-                    ) {
-                        Text(
-                            text = if (isSyllableBarExpanded) "▲" else "▼",
-                            color = accentColor,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
+
 
                 if (candidateList.isNotEmpty()) {
                     Box(
@@ -369,51 +350,7 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
         } // End of when
     } // End of Column
 
-        if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = false } // Click outside to close
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 52.dp)
-                        .clickable(enabled = false) {}, // Intercept clicks so they don't close the overlay
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(4),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 120.dp)
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(t9PinyinCombinations) { pinyin ->
-                            Text(
-                                text = pinyin,
-                                color = if (pinyin == currentPinyinText) accentColor else textColor,
-                                fontSize = 16.sp,
-                                textAlign = TextAlign.Center,
-                                fontWeight = if (pinyin == currentPinyinText) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color(0xFFF7F7F7))
-                                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = false
-                                        onSyllableSelected(pinyin)
-                                    }
-                                    .padding(vertical = 10.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
+
     }
 
         if (isCandidatePanelExpanded && candidateList.isNotEmpty()) {

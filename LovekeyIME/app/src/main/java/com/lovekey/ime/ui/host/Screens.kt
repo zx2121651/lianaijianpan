@@ -250,15 +250,23 @@ fun SettingsHomeScreen(context: Context, onNavigateToSmartInput: () -> Unit) {
 @Composable
 fun SmartInputScreen(context: Context, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val typoEnabled by context.dataStore.data.map { it[SettingsKeys.ENABLE_TYPO_CORRECTION] ?: true }.collectAsState(initial = true)
+    val typoFlow = remember { context.dataStore.data.map { it[SettingsKeys.ENABLE_TYPO_CORRECTION] ?: true } }
+    val typoEnabled by typoFlow.collectAsState(initial = true)
 
-    val fuzzyZhZ by context.dataStore.data.map { it[SettingsKeys.FUZZY_ZH_Z] ?: false }.collectAsState(initial = false)
-    val fuzzyChC by context.dataStore.data.map { it[SettingsKeys.FUZZY_CH_C] ?: false }.collectAsState(initial = false)
-    val fuzzyShS by context.dataStore.data.map { it[SettingsKeys.FUZZY_SH_S] ?: false }.collectAsState(initial = false)
-    val fuzzyNL by context.dataStore.data.map { it[SettingsKeys.FUZZY_N_L] ?: false }.collectAsState(initial = false)
-    val fuzzyEnEng by context.dataStore.data.map { it[SettingsKeys.FUZZY_EN_ENG] ?: false }.collectAsState(initial = false)
-    val fuzzyInIng by context.dataStore.data.map { it[SettingsKeys.FUZZY_IN_ING] ?: false }.collectAsState(initial = false)
-    val fuzzyAnAng by context.dataStore.data.map { it[SettingsKeys.FUZZY_AN_ANG] ?: false }.collectAsState(initial = false)
+    val flow1 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_ZH_Z] ?: false } }
+    val fuzzyZhZ by flow1.collectAsState(initial = false)
+    val flow2 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_CH_C] ?: false } }
+    val fuzzyChC by flow2.collectAsState(initial = false)
+    val flow3 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_SH_S] ?: false } }
+    val fuzzyShS by flow3.collectAsState(initial = false)
+    val flow4 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_N_L] ?: false } }
+    val fuzzyNL by flow4.collectAsState(initial = false)
+    val flow5 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_EN_ENG] ?: false } }
+    val fuzzyEnEng by flow5.collectAsState(initial = false)
+    val flow6 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_IN_ING] ?: false } }
+    val fuzzyInIng by flow6.collectAsState(initial = false)
+    val flow7 = remember { context.dataStore.data.map { it[SettingsKeys.FUZZY_AN_ANG] ?: false } }
+    val fuzzyAnAng by flow7.collectAsState(initial = false)
 
     Column(
         modifier = Modifier
