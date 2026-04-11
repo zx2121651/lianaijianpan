@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -21,13 +23,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
 sealed class BottomNavItem(val route: String, val label: String, val icon: ImageVector) {
-    object Store : BottomNavItem("store", "首页", Icons.Filled.ColorLens)
+    object Home : BottomNavItem("home", "首页", Icons.Filled.Home)
+    object Store : BottomNavItem("store", "装扮", Icons.Filled.Palette)
     object Phrases : BottomNavItem("phrases", "语料", Icons.Filled.Translate)
-    object Dictionary : BottomNavItem("dictionary", "词库", Icons.Filled.LibraryBooks)
+    object Dictionary : BottomNavItem("dictionary", "词库", Icons.AutoMirrored.Filled.LibraryBooks)
     object Profile : BottomNavItem("profile", "我的", Icons.Filled.Settings)
 }
 
 val items = listOf(
+    BottomNavItem.Home,
     BottomNavItem.Store,
     BottomNavItem.Phrases,
     BottomNavItem.Dictionary,
@@ -35,7 +39,7 @@ val items = listOf(
 )
 
 @Composable
-fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit, onNavigateToDiy: () -> Unit) {
+fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit, onNavigateToDiy: () -> Unit, onNavigateToAddWord: () -> Unit, onNavigateToAbout: () -> Unit) {
     val navController = rememberNavController()
     Scaffold(
         bottomBar = {
@@ -68,21 +72,23 @@ fun MainScreen(context: Context, onNavigateToSmartInput: () -> Unit, onNavigateT
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = BottomNavItem.Store.route,
+            startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Store.route) {
+            composable(BottomNavItem.Home.route) {
                 HomeScreen(context)
+            }
+            composable(BottomNavItem.Store.route) {
+                StoreScreen(context, onNavigateToDiy)
             }
             composable(BottomNavItem.Phrases.route) {
                 PhrasesScreen(context)
             }
             composable(BottomNavItem.Dictionary.route) {
-                // Placeholder
-                Text("词库同步开发中...", modifier = Modifier.padding(16.dp))
+                DictionaryScreen(context, onNavigateToAddWord)
             }
             composable(BottomNavItem.Profile.route) {
-                SettingsHomeScreen(context, onNavigateToSmartInput)
+                ProfileScreen(context, onNavigateToSmartInput, onNavigateToAbout)
             }
         }
     }
@@ -109,7 +115,9 @@ fun LovekeyHostApp(context: Context) {
             MainScreen(
                 context = context,
                 onNavigateToSmartInput = { rootNavController.navigate("smart_input") },
-                onNavigateToDiy = { rootNavController.navigate("diy_theme") }
+                onNavigateToDiy = { rootNavController.navigate("diy_theme") },
+                onNavigateToAddWord = { rootNavController.navigate("add_word") },
+                onNavigateToAbout = { rootNavController.navigate("about") }
             )
         }
 
@@ -125,6 +133,17 @@ fun LovekeyHostApp(context: Context) {
                 context = context,
                 onBack = { rootNavController.popBackStack() }
             )
+        }
+
+        composable("add_word") {
+            AddWordScreen(
+                context = context,
+                onBack = { rootNavController.popBackStack() }
+            )
+        }
+
+        composable("about") {
+            AboutScreen(onBack = { rootNavController.popBackStack() })
         }
     }
 }
