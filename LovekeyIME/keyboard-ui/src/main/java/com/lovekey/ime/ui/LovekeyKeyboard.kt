@@ -1,5 +1,9 @@
 package com.lovekey.ime.ui
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,12 +51,21 @@ fun LovekeyKeyboard(
     textColor: Color = Color(0xFF4A4443),
     secondaryTextColor: Color = Color(0xFF988F8E),
     unselectedTabColor: Color = Color(0xFFD6D1D1),
+    backgroundImagePath: String? = null,
+    keyAlpha: Float = 1.0f,
     onKeyPress: (String) -> Unit,
+
     onCandidateSelected: (String) -> Unit,
     onSyllableSelected: (String) -> Unit = {},
     onEnglishModeChanged: (Boolean) -> Unit = {},
     onKeyboardModeChanged: (KeyboardMode) -> Unit = {},
-    onCursorMove: (Int) -> Unit = {}
+    onCursorMove: (Int) -> Unit = {},
+    clipboardHistory: List<String> = emptyList(),
+    phrasesList: List<String> = emptyList(),
+    onPasteClip: (String) -> Unit = {},
+    onDeleteClip: (String) -> Unit = {},
+    onClearClipboard: () -> Unit = {},
+    onSendPhrase: (String) -> Unit = {}
 ) {
 
     val keyCornerRadius = 10.dp
@@ -60,7 +73,12 @@ fun LovekeyKeyboard(
     var isEnglishMode by remember { mutableStateOf(isEnglishModeExternal) }
     LaunchedEffect(isEnglishModeExternal) { isEnglishMode = isEnglishModeExternal }
 
+
     val view = LocalView.current
+
+    val appliedKeyColor = keyColor.copy(alpha = keyAlpha)
+    val appliedFunctionKeyColor = functionKeyColor.copy(alpha = keyAlpha)
+
     var isSyllableBarExpanded by remember { mutableStateOf(false) }
     var isCandidatePanelExpanded by remember { mutableStateOf(false) }
 
@@ -72,40 +90,49 @@ fun LovekeyKeyboard(
     }
 
 
+
     Box(modifier = Modifier.fillMaxWidth()) {
+        if (backgroundImagePath != null) {
+            val bitmap = remember(backgroundImagePath) { BitmapFactory.decodeFile(backgroundImagePath)?.asImageBitmap() }
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Custom Background",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(boardColor)
+                .background(if (backgroundImagePath != null) Color.Transparent else boardColor)
                 .padding(bottom = 12.dp)
         ) {
+        if (currentPinyinText.isNotEmpty()) {
+            SyllableBar(
+                currentPinyinText = currentPinyinText,
+                t9PinyinCombinations = t9PinyinCombinations,
+                isExpanded = isSyllableBarExpanded,
+                onExpandedChange = { isSyllableBarExpanded = it },
+                onSyllableSelected = onSyllableSelected,
+                accentColor = accentColor,
+                textColor = textColor,
+                view = view,
+)
+
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .background(Color.White)
+                .background(if (backgroundImagePath != null) appliedFunctionKeyColor else Color.White)
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (currentPinyinText.isNotEmpty()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = currentPinyinText,
-                        color = accentColor,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .width(1.dp)
-                        .background(Color(0xFFF0EBEA))
-                )
 
                 LazyRow(
                     modifier = Modifier
@@ -129,21 +156,7 @@ onCandidateSelected(candidate) }
                     }
                 }
 
-                if (t9PinyinCombinations.size > 1) {
-                    Box(
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = !isSyllableBarExpanded
-                            }
-                            .padding(start = 8.dp)
-                    ) {
-                        Text(
-                            text = if (isSyllableBarExpanded) "▲" else "▼",
-                            color = accentColor,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
+
 
                 if (candidateList.isNotEmpty()) {
                     Box(
@@ -163,39 +176,63 @@ isCandidatePanelExpanded = !isCandidatePanelExpanded
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "全拼",
-                        color = if (currentModeExternal == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.QWERTY) }
-                            .padding(8.dp)
-                    )
-                    Text(
-                        text = "九键",
-                        color = if (currentModeExternal == KeyboardMode.T9) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.T9) }
-                            .padding(8.dp)
-                    )
-                    Text(
-                        text = "手写",
-                        color = if (currentModeExternal == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
-                        fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 15.sp,
-                        modifier = Modifier
-                            .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
-                            .padding(8.dp)
-                    )
+                    // Left side tools
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "📋",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.CLIPBOARD) }
+                                .padding(12.dp)
+                        )
+                        Text(
+                            text = "💬",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.PHRASES) }
+                                .padding(12.dp)
+                        )
+                        Text(
+                            text = "⚙️",
+                            fontSize = 18.sp,
+                            modifier = Modifier
+                                .clickable { /* TODO: Open Settings Intent */ }
+                                .padding(12.dp)
+                        )
+                    }
+                    // Right side modes
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "全拼",
+                            color = if (currentModeExternal == KeyboardMode.QWERTY) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.QWERTY) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.QWERTY) }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = "九键",
+                            color = if (currentModeExternal == KeyboardMode.T9) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.T9) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.T9) }
+                                .padding(8.dp)
+                        )
+                        Text(
+                            text = "手写",
+                            color = if (currentModeExternal == KeyboardMode.HANDWRITING) accentColor else unselectedTabColor,
+                            fontWeight = if (currentModeExternal == KeyboardMode.HANDWRITING) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 15.sp,
+                            modifier = Modifier
+                                .clickable { onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
+                                .padding(8.dp)
+                        )
+                    }
                 }
             }
         }
@@ -217,8 +254,8 @@ onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                     isEnglishModeExternal = isEnglishMode,
                     enterKeyText = enterKeyText,
                     textColor = textColor,
-                    keyColor = keyColor,
-                    functionKeyColor = functionKeyColor,
+                    keyColor = appliedKeyColor,
+                    functionKeyColor = appliedFunctionKeyColor,
                     accentColor = accentColor,
                     keyCornerRadius = keyCornerRadius,
                     onKeyPress = onKeyPress,
@@ -244,8 +281,8 @@ onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                 enterKeyText = enterKeyText,
                 textColor = textColor,
                 secondaryTextColor = secondaryTextColor,
-                keyColor = keyColor,
-                functionKeyColor = functionKeyColor,
+                keyColor = appliedKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress,
@@ -258,7 +295,7 @@ onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
             KeyboardMode.HANDWRITING -> HandwritingKeyboard(
                 enterKeyText = enterKeyText,
                 textColor = textColor,
-                functionKeyColor = functionKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
@@ -278,61 +315,44 @@ onKeyboardModeChanged(KeyboardMode.HANDWRITING) }
                     isEnglishMode = it
                     onEnglishModeChanged(it)
                 },
-                keyColor = keyColor,
-                functionKeyColor = functionKeyColor,
+                keyColor = appliedKeyColor,
+                functionKeyColor = appliedFunctionKeyColor,
                 accentColor = accentColor,
                 keyCornerRadius = keyCornerRadius,
                 onKeyPress = onKeyPress
             )
-        }
+            KeyboardMode.CLIPBOARD -> ClipboardKeyboard(
+                clipboardHistory = clipboardHistory,
+                boardColor = boardColor,
+                keyColor = appliedKeyColor,
+                textColor = textColor,
+                secondaryTextColor = secondaryTextColor,
+                accentColor = accentColor,
+                onPaste = {
+                    onPasteClip(it)
+                    onKeyboardModeChanged(previousModeExternal)
+                },
+                onDelete = onDeleteClip,
+                onClearAll = onClearClipboard,
+                onClose = { onKeyboardModeChanged(previousModeExternal) }
+            )
+            KeyboardMode.PHRASES -> PhrasesKeyboard(
+                phrasesList = phrasesList,
+                boardColor = boardColor,
+                keyColor = appliedKeyColor,
+                textColor = textColor,
+                secondaryTextColor = secondaryTextColor,
+                accentColor = accentColor,
+                onSendPhrase = {
+                    onSendPhrase(it)
+                    onKeyboardModeChanged(previousModeExternal)
+                },
+                onClose = { onKeyboardModeChanged(previousModeExternal) }
+            )
+        } // End of when
+    } // End of Column
 
-        } // End of Column
 
-        if (isSyllableBarExpanded && t9PinyinCombinations.size > 1) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = false } // Click outside to close
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 52.dp)
-                        .clickable(enabled = false) {}, // Intercept clicks so they don't close the overlay
-                    color = Color.White,
-                    shadowElevation = 8.dp
-                ) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(4),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 120.dp)
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(t9PinyinCombinations) { pinyin ->
-                            Text(
-                                text = pinyin,
-                                color = if (pinyin == currentPinyinText) accentColor else textColor,
-                                fontSize = 16.sp,
-                                textAlign = TextAlign.Center,
-                                fontWeight = if (pinyin == currentPinyinText) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(if (pinyin == currentPinyinText) Color(0xFFF5E6E8) else Color(0xFFF7F7F7))
-                                    .clickable { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-isSyllableBarExpanded = false
-                                        onSyllableSelected(pinyin)
-                                    }
-                                    .padding(vertical = 10.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 
         if (isCandidatePanelExpanded && candidateList.isNotEmpty()) {

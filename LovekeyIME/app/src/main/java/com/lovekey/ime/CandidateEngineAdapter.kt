@@ -156,7 +156,9 @@ class CandidateEngineAdapter {
                         ensureActive()
                         flatCandidates.addAll(match.second)
                     }
-                    return@withContext Triple(primaryMatchVariant, flatCandidates.distinct(), t9Combinations)
+                    // For QWERTY, we might not have t9Combinations populated, let's at least provide the primary match so the SyllableBar renders
+                    val qwertyCombos = if (t9Combinations.isEmpty()) listOf(primaryMatchVariant) else t9Combinations
+                    return@withContext Triple(primaryMatchVariant, flatCandidates.distinct(), qwertyCombos)
                 }
 
                 return@withContext Triple(input, emptyList(), t9Combinations)
